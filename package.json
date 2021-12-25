@@ -8,12 +8,14 @@
         "dotenv": "^10.0.0",
         "express": "^4.17.2",
         "jsonwebtoken": "^8.5.1",
+        "node-os-utils": "^1.3.5",
         "socket.io": "^4.4.0",
         "source-map-support": "^0.5.19"
     },
     "devDependencies": {
         "@types/express": "^4.17.13",
         "@types/node": "^14.14.22",
+        "@types/node-os-utils": "^1.2.0",
         "@typescript-eslint/eslint-plugin": "^4.15.2",
         "@typescript-eslint/parser": "^4.15.2",
         "concurrently": "^6.2.0",
@@ -26,7 +28,7 @@
         "dev": "WAA_CONFIG_PATH=./config.json concurrently --raw --kill-others \"yarn watch\" \"yarn watch-run\"",
         "watch": "tsc --watch --preserveWatchOutput --noEmitOnError",
         "build": "tsc --preserveWatchOutput",
-        "watch-run": "nodemon --delay 1 -x \"node -r source-map-support/register --preserve-symlinks --inspect\" ./build/app/app.js",
+        "watch-run": "nodemon --watch build --delay 1 -x \"node -r source-map-support/register --preserve-symlinks --inspect\" ./build/app/app.js",
         "start": "node -r source-map-support/register --preserve-symlinks ./build/app/app.js",
         "get-ucpem": "curl -L https://github.com/bt7s7k7/UCPeM/releases/latest/download/ucpem.js -o node_modules/.bin/ucpem",
         "lint": "eslint ."

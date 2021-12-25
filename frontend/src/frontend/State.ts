@@ -1,4 +1,4 @@
-import { io, Socket } from "socket.io-client"
+import { io } from "socket.io-client"
 import { markRaw, reactive } from "vue"
 import { unreachable } from "../comTypes/util"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
@@ -8,13 +8,15 @@ import { EventListener } from "../eventLib/EventListener"
 import { StructSyncClient } from "../structSync/StructSyncClient"
 import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
 import { AuthBridge } from "./auth/AuthBridge"
+import { DeviceProxy } from "./device/DeviceProxy"
 
 class State extends EventListener {
     public readonly context
     public readonly auth!: AuthBridge
+    public readonly device!: DeviceProxy
     public authReady = false
     public connected = false
-    protected socket: Socket | null = null
+    protected connectionContext: DIContext | null = null
 
     public awake() {
         const context = new DIContext(this.context)
@@ -41,8 +43,8 @@ class State extends EventListener {
             if (auth.user) {
                 this.init()
             } else {
-                this.socket?.disconnect()
-                this.socket = null
+                this.connectionContext?.dispose()
+                this.connectionContext = null
             }
         })
 
@@ -50,21 +52,34 @@ class State extends EventListener {
     }
 
     public init() {
-        if (this.socket) unreachable()
+        if (this.connectionContext) unreachable()
 
-        this.socket = markRaw(io({
+        const socket = markRaw(io({
             auth: {
                 token: this.auth.token
             }
         }))
 
-        this.socket.on("connect", () => {
+        socket.on("connect", () => {
             this.connected = true
         })
 
-        this.socket.on("disconnect", (reason) => {
+        socket.on("disconnect", (reason) => {
             this.connected = false
         })
+
+        const context = new DIContext(this.context)
+        context.guard(() => socket.disconnect())
+
+        context.provide(MessageBridge, () => new MessageBridge.Generic(socket))
+        context.provide(StructSyncClient, "default")
+
+        const device = context.instantiate(() => DeviceProxy.default())
+        context.guard(device)
+
+        Object.assign(this, { device, connectionContext: context })
+
+        this.device.synchronize()
     }
 
     constructor() {

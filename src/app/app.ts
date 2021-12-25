@@ -1,9 +1,12 @@
 import { createServer } from "http"
+import { hostname } from "os"
 import { join } from "path"
 import { Server } from "socket.io"
 import { AuthController } from "../backend/AuthController"
 import { DATABASE } from "../backend/DATABASE"
+import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
+import { DeviceConfig } from "../common/Device"
 import { User } from "../common/User"
 import { stringifyAddress } from "../comTypes/util"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
@@ -17,6 +20,7 @@ import { StructSyncExpress } from "../structSyncExpress/StructSyncExpress"
 import express = require("express")
 
 const context = new DIContext()
+context.provide(IDProvider, () => new IDProvider.Incremental())
 const logger = context.provide(Logger, () => new NodeLogger())
 
 logger.info`Starting...`
@@ -25,10 +29,15 @@ const app = express()
 const http = createServer(app)
 const io = new Server(http)
 
+if (!DATABASE.tryGet("device")) {
+    DATABASE.put("device", new DeviceConfig({
+        label: hostname()
+    }))
+}
+
 const auth = (() => {
     const apiContext = new DIContext(context)
 
-    apiContext.provide(IDProvider, () => new IDProvider.Incremental())
     const bridge = apiContext.provide(MessageBridge, () => new StructSyncExpress())
     app.use("/api", express.json(), bridge.handler)
 
@@ -69,6 +78,9 @@ io.use(async (socket, next) => {
 {
     const ioContext = new DIContext(context)
     ioContext.provide(StructSyncServer, "default")
+
+    ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
+
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
         sessionContext.provide(MessageBridge, () => new MessageBridge.Generic(socket))
