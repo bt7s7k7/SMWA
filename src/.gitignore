@@ -1,0 +1,12 @@
+
+# UCPeM generated, write above to not be overwritten
+structSync
+struct
+dependencyInjection
+eventLib
+simpleAuth
+simpleDB
+comTypes
+structSyncExpress
+nodeLogger
+logger

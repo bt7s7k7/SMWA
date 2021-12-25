@@ -1,11 +1,15 @@
 node_modules
-/build
+.DS_Store
+dist
+dist-ssr
 *.local
 tsconfig.tsbuildinfo
 yarn-error.log
-/db.json
 
 # UCPEM
 ucpem_ports
-
 /.vscode
+
+# Firebase
+/.firebase
+/firebase-debug.log
