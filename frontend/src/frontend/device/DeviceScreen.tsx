@@ -6,6 +6,7 @@ import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
 import { TextField } from "../../vue3gui/TextField"
 import { STATE } from "../State"
+import { PersonalTerminalView } from "../terminal/PersonalTerminalView"
 
 export const DeviceScreen = (defineComponent({
     name: "DeviceScreen",

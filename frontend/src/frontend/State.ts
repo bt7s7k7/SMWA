@@ -9,14 +9,16 @@ import { StructSyncClient } from "../structSync/StructSyncClient"
 import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
 import { AuthBridge } from "./auth/AuthBridge"
 import { DeviceProxy } from "./device/DeviceProxy"
+import { PersonalTerminalSpawnerProxy } from "./terminal/PersonalTerminalSpawnerProxy"
 
 class State extends EventListener {
     public readonly context
     public readonly auth!: AuthBridge
     public readonly device!: DeviceProxy
+    public readonly terminalSpawner!: PersonalTerminalSpawnerProxy
     public authReady = false
     public connected = false
-    protected connectionContext: DIContext | null = null
+    public connectionContext: DIContext | null = null
 
     public awake() {
         const context = new DIContext(this.context)
@@ -71,13 +73,15 @@ class State extends EventListener {
         const context = new DIContext(this.context)
         context.guard(() => socket.disconnect())
 
-        context.provide(MessageBridge, () => new MessageBridge.Generic(socket))
+        const bridge = context.provide(MessageBridge, () => new MessageBridge.Generic(socket))
+        bridge.hideErrorDetail = false
         context.provide(StructSyncClient, "default")
 
         const device = context.instantiate(() => DeviceProxy.default())
+        const terminalSpawner = context.instantiate(() => PersonalTerminalSpawnerProxy.default())
         context.guard(device)
 
-        Object.assign(this, { device, connectionContext: context })
+        Object.assign(this, { device, connectionContext: context, terminalSpawner })
 
         this.device.synchronize()
     }
@@ -96,3 +100,7 @@ class State extends EventListener {
 export const STATE = new State() as State
 // @ts-ignore
 window.state = STATE
+
+window.addEventListener("beforeunload", () => {
+    STATE.connectionContext?.dispose()
+})

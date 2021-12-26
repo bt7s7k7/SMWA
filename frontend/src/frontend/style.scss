@@ -2,3 +2,36 @@
     width: 500px;
     max-width: calc(100vw - 50px);
 }
+
+$padding: 5px;
+
+
+.as-terminal {
+    .terminal-container {
+        width: 1135px + ($padding * 2);
+        height: 840px + ($padding * 2);
+        
+        overflow: auto;
+        
+        .terminal-parent {
+            width: 1135px + ($padding * 2);
+            height: 840px + ($padding * 2);
+
+            > div {
+                padding: $padding;
+            }
+        }
+    }
+
+    &:not(.fill) {
+        .terminal-container {
+            @media screen and (max-width: 1187px) {
+                width: calc(100vw - 100px);
+        }
+        
+        @media screen and (max-height: 925px) {
+                height: calc(100vh - 100px);
+        }
+        }
+    }
+}

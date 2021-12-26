@@ -6,6 +6,8 @@ import { AuthController } from "../backend/AuthController"
 import { DATABASE } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
+import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
+import { TerminalManager } from "../backend/terminal/TerminalManager"
 import { DeviceConfig } from "../common/Device"
 import { User } from "../common/User"
 import { stringifyAddress } from "../comTypes/util"
@@ -80,11 +82,17 @@ io.use(async (socket, next) => {
     ioContext.provide(StructSyncServer, "default")
 
     ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
+    ioContext.provide(TerminalManager, "default")
+    const personalTerminalSpawner = ioContext.instantiate(() => new PersonalTerminalSpawnerController().register())
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
         sessionContext.provide(MessageBridge, () => new MessageBridge.Generic(socket))
-        sessionContext.provide(StructSyncSession, "default")
+        const session = sessionContext.provide(StructSyncSession, "default")
+
+        session.onError.add(null, (error) => logger.error`${error}`)
+
+        sessionContext.guard(personalTerminalSpawner.createFinalizer(session))
 
         socket.on("disconnect", () => {
             sessionContext.dispose()
