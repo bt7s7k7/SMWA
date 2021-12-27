@@ -6,6 +6,7 @@ import { AuthController } from "../backend/AuthController"
 import { DATABASE } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
+import { FileBrowserController } from "../backend/FileBrowserController"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
 import { DeviceConfig } from "../common/Device"
@@ -84,6 +85,7 @@ io.use(async (socket, next) => {
     ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
     ioContext.provide(TerminalManager, "default")
     const personalTerminalSpawner = ioContext.instantiate(() => new PersonalTerminalSpawnerController().register())
+    ioContext.instantiate(() => FileBrowserController.make().register())
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
