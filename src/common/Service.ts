@@ -32,13 +32,17 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     terminal: Type.string.as(Type.nullable),
     config: ServiceConfig.ref(),
     definition: ServiceDefinition.ref()
-}) { }, {})
+}) {
+    public get id() { return this.config.id }
+}, {})
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {
     serviceList: ServiceInfo.ref().as(Type.array)
 }) { }, {
     tryPath: ActionType.define("tryPath", Type.object({ path: Type.string }), ServiceDefinition.ref()),
-    createService: ActionType.define("createService", Type.object({ path: Type.string, label: Type.string }), Type.string)
+    createService: ActionType.define("createService", Type.object({ path: Type.string, label: Type.string }), Type.string),
+    getServiceError: ActionType.define("getServiceError", Type.object({ id: Type.string }), Type.string.as(Type.nullable)),
+    deleteService: ActionType.define("deleteService", Type.object({ id: Type.string }), Type.empty)
 })
 
 /* interface Service {

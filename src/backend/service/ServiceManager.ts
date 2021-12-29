@@ -45,6 +45,23 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             DATABASE.put("service", config)
             this.logger.info`Created new service ${config.label}`
             return service.config.id
+        },
+        getServiceError: async ({ id }) => {
+            return this.serviceErrors.get(id) ?? null
+        },
+        deleteService: async ({ id }) => {
+            const serviceConfig = DATABASE.tryGet("service", id)
+            if (!serviceConfig) throw new ClientError(`Cannot find service "${id}"`)
+
+            if (this.services.has(id)) {
+                // TODO: Delete service controller
+                unreachable()
+            }
+
+            this.serviceErrors.delete(id)
+            this.updateServiceInfo(id, !!"delete")
+            DATABASE.delete("service", id)
+            this.logger.info`Delete service ${serviceConfig.label}`
         }
     })
 
@@ -58,7 +75,6 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
                     result.type == "not_found" ? `Missing definition file for service "${result.target!.label}"(${result.target!.id}) at ${result.path}`
                         : `Failed to load definition for "${result.target!.label}"(${result.target!.id}): ${result.error}`
                 this.logger.error`${LogMarker.rawText(error)}`
-                this.device.addError(error)
                 this.mutate(v => v.serviceList.push(new ServiceInfo({ id: result.target!.id, label: result.target!.label, state: "error" })))
                 this.serviceErrors.set(result.target!.id, error)
             }
@@ -78,14 +94,19 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
         this.updateServiceInfo(service)
     }
 
-    public updateServiceInfo(service: ServiceController, shouldDelete?: boolean) {
-        const index = this.serviceList.findIndex(v => v.id == service.config.id)
+    public updateServiceInfo(service: ServiceController, shouldDelete?: boolean): void
+    public updateServiceInfo(service: string, shouldDelete: true): void
+    public updateServiceInfo(service: ServiceController | string, shouldDelete?: boolean) {
+        const id = typeof service == "string" ? service : service.config.id
+        const index = this.serviceList.findIndex(v => v.id == id)
         if (index == -1) {
+            if (typeof service == "string") unreachable()
             this.mutate(v => v.serviceList.push(service.makeInfo()))
         } else {
             if (shouldDelete) {
                 this.mutate(v => v.serviceList.splice(index, 1))
             } else {
+                if (typeof service == "string") unreachable()
                 this.mutate(v => v.serviceList[index] = service.makeInfo())
             }
         }
