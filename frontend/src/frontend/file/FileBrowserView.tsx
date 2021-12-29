@@ -20,7 +20,8 @@ export const FileBrowserView = eventDecorator(defineComponent({
     },
     emits: {
         navigated: (path: string) => true,
-        selected: (file: string) => true
+        selected: (file: string) => true,
+        reload: () => true
     },
     setup(props, ctx) {
         const emitter = useDynamicsEmitter()
@@ -80,9 +81,14 @@ export const FileBrowserView = eventDecorator(defineComponent({
             }
         }
 
+        function reload() {
+            ctx.emit("reload")
+            files.reload()
+        }
+
         watch(path, path => {
             ctx.emit("navigated", path)
-        })
+        }, { immediate: true })
 
         return () => (
             <div class="flex column gap-2">
@@ -97,7 +103,7 @@ export const FileBrowserView = eventDecorator(defineComponent({
                                 </>)}
                             </div>
                             <div class="flex-fill"></div>
-                            <Button clear onClick={() => files.reload()}> <Icon icon={mdiRefresh} /> </Button>
+                            <Button clear onClick={reload}> <Icon icon={mdiRefresh} /> </Button>
                         </div>
                         <div class="flex-fill">
                             <div class="absolute-fill flex column scroll">

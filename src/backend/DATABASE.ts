@@ -1,15 +1,16 @@
 import { readFileSync, writeFileSync } from "fs"
 import { join } from "path"
 import { DeviceConfig } from "../common/Device"
+import { ServiceConfig } from "../common/Service"
 import { User } from "../common/User"
 import { SimpleDB } from "../simpleDB/SimpleDB"
-import { DeviceController } from "./DeviceController"
 import { ENV } from "./ENV"
 
 export const DATABASE = new SimpleDB({
     tables: {
         user: User,
-        device: DeviceConfig
+        device: DeviceConfig,
+        service: ServiceConfig
     },
     onChanged() {
         writeFileSync(DB_PATH, JSON.stringify(DATABASE.export()))

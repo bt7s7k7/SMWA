@@ -12,12 +12,16 @@ export class DeviceController extends DeviceContract.defineController() {
         }
     })
 
+    public addError(error: string) {
+        this.mutate(v => v.errors.push(error))
+    }
+
     public static make(config: DeviceConfig) {
         const interfaces = autoFilter(Object.entries(networkInterfaces()).map(v => v[1]?.map(v => v.address))).filter(v => v != "127.0.0.1" && v != "::1")
         const start = Date.now() - uptime() * 1000
         const device = new DeviceController({
             config, interfaces, start,
-            cpuUsage: 0, memUsage: 0, os: ""
+            cpuUsage: 0, memUsage: 0, os: "", errors: []
         })
         // @ts-ignore
         NodeOSUtils.os.oos().then(osName => device.mutate(v => v.os = `${osName} (${arch()}, ${release()})`))

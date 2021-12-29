@@ -4,9 +4,9 @@ import { Button } from "../../vue3gui/Button"
 import { Circle } from "../../vue3gui/Circle"
 import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
+import { StateCard } from "../../vue3gui/StateCard"
 import { TextField } from "../../vue3gui/TextField"
 import { STATE } from "../State"
-import { PersonalTerminalView } from "../terminal/PersonalTerminalView"
 
 export const DeviceScreen = (defineComponent({
     name: "DeviceScreen",
@@ -101,6 +101,13 @@ export const DeviceScreen = (defineComponent({
                             </div>
                         </div>
                     </div>
+
+                    {STATE.device.errors.map(v => (
+                        <div class="border border-danger text-danger rounded p-2 gap-2 flex row">
+                            <StateCard error />
+                            <pre class="m-0 ml-5 mt-1">{v}</pre>
+                        </div>
+                    ))}
                 </div>
             </div>
         )

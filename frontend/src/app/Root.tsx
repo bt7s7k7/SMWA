@@ -3,6 +3,7 @@ import { defineComponent } from "vue"
 import { makeRandomID } from "../comTypes/util"
 import { UserView } from "../frontend/auth/UserView"
 import { FileBrowserView } from "../frontend/file/FileBrowserView"
+import { Sidebar } from "../frontend/Sidebar"
 import { STATE } from "../frontend/State"
 import "../frontend/style.scss"
 import { PersonalTerminalView } from "../frontend/terminal/PersonalTerminalView"
@@ -54,7 +55,7 @@ export const Root = defineComponent({
                     <UserView />
                 </div>
                 <div class="flex-fill flex row">
-                    <div class="flex-basis-200 border-right"></div>
+                    <Sidebar class="flex-basis-200 border-right"></Sidebar>
                     <router-view />
                 </div>
             </div>

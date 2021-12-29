@@ -10,6 +10,7 @@ import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
 import { AuthBridge } from "./auth/AuthBridge"
 import { DeviceProxy } from "./device/DeviceProxy"
 import { FileBrowserProxy } from "./file/FileBrowserProxy"
+import { ServiceManagerProxy } from "./service/ServiceManagerProxy"
 import { PersonalTerminalSpawnerProxy } from "./terminal/PersonalTerminalSpawnerProxy"
 
 class State extends EventListener {
@@ -18,6 +19,7 @@ class State extends EventListener {
     public readonly device!: DeviceProxy
     public readonly terminalSpawner!: PersonalTerminalSpawnerProxy
     public readonly fileBrowser!: FileBrowserProxy
+    public readonly services!: ServiceManagerProxy
     public authReady = false
     public connected = false
     public connectionContext: DIContext | null = null
@@ -84,11 +86,13 @@ class State extends EventListener {
         context.guard(device)
 
         const fileBrowser = context.instantiate(() => FileBrowserProxy.default())
+        const services = context.instantiate(() => ServiceManagerProxy.default())
 
-        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser })
+        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services })
 
         this.fileBrowser.synchronize()
         this.device.synchronize()
+        this.services.synchronize()
     }
 
     constructor() {

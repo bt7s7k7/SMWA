@@ -15,7 +15,8 @@ export const DeviceContract = StructSyncContract.define(class Device extends Str
     interfaces: Type.string.as(Type.array),
     start: Type.number,
     cpuUsage: Type.number,
-    memUsage: Type.number
+    memUsage: Type.number,
+    errors: Type.string.as(Type.array)
 }) { }, {
     setLabel: ActionType.define("setLabel", Type.object({ label: Type.string }), Type.empty)
 })

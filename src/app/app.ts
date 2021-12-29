@@ -7,6 +7,7 @@ import { DATABASE } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
+import { ServiceManager } from "../backend/service/ServiceManager"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
 import { DeviceConfig } from "../common/Device"
@@ -82,7 +83,8 @@ io.use(async (socket, next) => {
     const ioContext = new DIContext(context)
     ioContext.provide(StructSyncServer, "default")
 
-    ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
+    const deviceController = ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
+    ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
     ioContext.provide(TerminalManager, "default")
     const personalTerminalSpawner = ioContext.instantiate(() => new PersonalTerminalSpawnerController().register())
     ioContext.instantiate(() => FileBrowserController.make().register())
