@@ -6,6 +6,10 @@ import { Root } from "./Root"
 
 const routes: RouteRecordRaw[] = [
     {
+        component: { render: () => h("div", { class: "flex-fill bg-black" }, [h(PersonalTerminalView)]) },
+        path: "/terminal"
+    },
+    {
         component: Root,
         path: "/",
         children: [
@@ -13,12 +17,13 @@ const routes: RouteRecordRaw[] = [
                 name: "DeviceScreen",
                 component: DeviceScreen,
                 path: "/"
+            },
+            {
+                name: "404",
+                component: { render: () => h("pre", { class: "m-4" }, "Page not found") },
+                path: "/:page(.*)*"
             }
         ]
-    },
-    {
-        component: () => h("div", { class: "flex-fill bg-black" }, [h(PersonalTerminalView)]),
-        path: "/terminal"
     }
 ]
 
