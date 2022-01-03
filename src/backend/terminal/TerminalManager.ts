@@ -1,3 +1,4 @@
+import { unreachable } from "../../comTypes/util"
 import { DIContext } from "../../dependencyInjection/DIContext"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { EventListener } from "../../eventLib/EventListener"
@@ -28,7 +29,10 @@ export class TerminalManager extends EventListener {
         return handle
     }
 
-    public async deleteTerminal(handle: TerminalHandleController) {
+    public async deleteTerminal(handle: TerminalHandleController | string) {
+        if (typeof handle == "string") {
+            handle = this.terminals.get(handle) ?? unreachable("Handle should be a valid terminal id")
+        }
         this.terminals.delete(handle.id)
         this.logger.info`Deleted terminal ${handle.id}`
         handle[DISPOSE]()

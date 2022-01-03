@@ -23,6 +23,7 @@ class State extends EventListener {
     public authReady = false
     public connected = false
     public connectionContext: DIContext | null = null
+    public time = 0
 
     public awake() {
         const context = new DIContext(this.context)
@@ -113,3 +114,8 @@ window.state = STATE
 window.addEventListener("beforeunload", () => {
     STATE.connectionContext?.dispose()
 })
+
+STATE.time = Date.now()
+setInterval(() => {
+    STATE.time = Date.now()
+}, 500)

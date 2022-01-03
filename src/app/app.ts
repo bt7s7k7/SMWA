@@ -83,10 +83,10 @@ io.use(async (socket, next) => {
     const ioContext = new DIContext(context)
     ioContext.provide(StructSyncServer, "default")
 
-    const deviceController = ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
-    ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
     ioContext.provide(TerminalManager, "default")
     const personalTerminalSpawner = ioContext.instantiate(() => new PersonalTerminalSpawnerController().register())
+    const deviceController = ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
+    ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
     ioContext.instantiate(() => FileBrowserController.make().register())
 
     io.on("connect", socket => {

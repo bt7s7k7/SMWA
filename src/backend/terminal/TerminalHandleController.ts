@@ -11,7 +11,8 @@ import process = require("process")
 const shell = platform() === "win32" ? "powershell.exe" : (process.env.SHELL ?? "bash")
 
 export interface TerminalOptions {
-    cwd?: string
+    cwd?: string,
+    command?: string
 }
 
 export class TerminalHandleController extends TerminalHandleContract.defineController() {
@@ -56,9 +57,17 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
         }
     }
 
+    public writeMessage(message: string, topMargin?: boolean) {
+        const timestamp = new Date().toISOString().substring(0, 19).replace(`T`, " ")
+        message = ConsoleColorUtils.addStyle(`[${timestamp}] ${message}`, "gray") + ConsoleColorUtils.addStyle(" ", "white") + "\r\n"
+        if (topMargin) message = "\r\n\r\n" + message
+        this.onData.emit(message)
+        this.terminal.write(message)
+    }
+
     public static make(options: TerminalOptions) {
         const id = makeRandomID()
-        const process_1 = pty.spawn(shell, [], {
+        const process_1 = pty.spawn(shell, options.command ? ["-c", options.command] : [], {
             name: "xterm-color",
             cwd: options.cwd ?? process.env.HOME ?? "/",
             cols: 160,
@@ -77,16 +86,18 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
         const handle = new TerminalHandleController({ id, open: true })
         Object.assign(handle, { process: process_1, terminal, terminalSerializer })
 
+        if (options.command) {
+            handle.writeMessage(`$ ${options.command}`)
+        }
+
         process_1.onData((data) => {
             handle.onData.emit(data)
             terminal.write(data)
         })
 
         process_1.onExit(({ exitCode, signal }) => {
-            const closedMessage = "\r\n" + ConsoleColorUtils.addStyle(`Process exited with code ${exitCode}${signal ? `, signal ${signal}` : ""}`, "gray") + "\n\r"
-            handle.onData.emit(closedMessage)
-            terminal.write(closedMessage)
-            handle.onClosed.emit()
+            handle.writeMessage(`Process exited with code: ${exitCode}${signal ? `, signal: ${signal}` : ""}`, !!"use top margin")
+            handle.onClosed.emit(exitCode)
             handle.process = null
         })
 

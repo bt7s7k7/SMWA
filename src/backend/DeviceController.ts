@@ -8,7 +8,7 @@ export class DeviceController extends DeviceContract.defineController() {
     public impl = super.impl({
         setLabel: async ({ label }) => {
             await this.mutate(v => v.config.label = label)
-            DATABASE.entityChanged()
+            DATABASE.setDirty()
         }
     })
 

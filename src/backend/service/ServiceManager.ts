@@ -6,12 +6,14 @@ import { LogMarker } from "../../logger/ObjectDescription"
 import { ClientError } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
 import { DeviceController } from "../DeviceController"
+import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceController } from "./ServiceController"
 import { ServiceRepository } from "./ServiceRepository"
 
 export class ServiceManager extends ServiceManagerContract.defineController() {
     public readonly context = DIContext.current
     public readonly logger = this.context.inject(Logger).prefix({ label: "SERV", color: "blue" })
+    public readonly terminalManager = DIContext.current.inject(TerminalManager)
     public readonly services = new Map<string, ServiceController>()
     public readonly serviceErrors = new Map<string, string>()
 
@@ -92,6 +94,10 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
         this.services.set(service.config.id, service)
 
         this.updateServiceInfo(service)
+        service.onInfoChanged.add(this, () => {
+            this.updateServiceInfo(service)
+        })
+        service.terminalManager = this.terminalManager
     }
 
     public updateServiceInfo(service: ServiceController, shouldDelete?: boolean): void

@@ -31,10 +31,17 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     state: ServiceState_t,
     terminal: Type.string.as(Type.nullable),
     config: ServiceConfig.ref(),
-    definition: ServiceDefinition.ref()
+    definition: ServiceDefinition.ref(),
+    /** When the service is running or updating, this contains the start time, else this contains the uptime */
+    uptime: Type.number.as(Type.nullable)
 }) {
     public get id() { return this.config.id }
-}, {})
+}, {
+    setLabel: ActionType.define("setLabel", Type.object({ label: Type.string }), Type.empty),
+    start: ActionType.define("start", Type.empty, Type.empty),
+    stop: ActionType.define("start", Type.empty, Type.empty),
+    update: ActionType.define("start", Type.empty, Type.empty),
+})
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {
     serviceList: ServiceInfo.ref().as(Type.array)

@@ -19,7 +19,7 @@ export const TerminalHandleContract = StructSyncContract.define(class TerminalHa
     resize: ActionType.define("resize", Type.object({ size: TerminalSize_t }), Type.empty)
 }, {
     onData: EventType.define("onData", Type.string),
-    onClosed: EventType.define("onClosed", Type.empty),
+    onClosed: EventType.define("onClosed", Type.number),
     onResize: EventType.define("onResize", TerminalSize_t)
 })
 

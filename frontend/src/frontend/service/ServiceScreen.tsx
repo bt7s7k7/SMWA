@@ -10,6 +10,7 @@ import { StateCard } from "../../vue3gui/StateCard"
 import { asyncComputed, stringifyError } from "../../vue3gui/util"
 import { STATE } from "../State"
 import { ServiceProxy } from "./ServiceProxy"
+import { ServiceView } from "./ServiceView"
 
 export const ServiceScreen = (defineComponent({
     name: "ServiceScreen",
@@ -19,8 +20,8 @@ export const ServiceScreen = (defineComponent({
         const emitter = useDynamicsEmitter()
 
         const serviceID = computed(() => route.params.service as string)
-        const service = asyncComputed(() => serviceID.value, id => ServiceProxy.make(STATE.connectionContext!, { track: true, id }), {
-            finalizer: v => v[DISPOSE]()
+        const service = asyncComputed(() => serviceID.value, async id => id ? await ServiceProxy.make(STATE.connectionContext!, { track: true, id }) : null, {
+            finalizer: v => v?.[DISPOSE]()
         })
 
         const serviceError = asyncComputed(() => [serviceID.value, service.error] as const, async ([id, error]) => {
@@ -78,7 +79,7 @@ export const ServiceScreen = (defineComponent({
                             </div>
                         </div>
                     ) : service.value && (
-                        <div>{service.value.config.label}</div>
+                        <ServiceView service={service.value} />
                     )
                 )
             }}</Overlay>

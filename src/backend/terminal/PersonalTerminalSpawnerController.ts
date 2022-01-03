@@ -25,7 +25,7 @@ export class PersonalTerminalSpawnerController extends PersonalTerminalSpawnerCo
             const handle = handles.get(meta.session)
             if (handle) return handle.id
 
-            const newHandle = this.terminalManager.openTerminal({})
+            const newHandle = this.terminalManager.openTerminal({ cwd: options.cwd ?? undefined })
             handles.set(meta.session, newHandle)
 
             return newHandle.id
