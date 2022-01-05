@@ -18,6 +18,7 @@ import { MessageBridge } from "../dependencyInjection/commonServices/MessageBrid
 import { DIContext } from "../dependencyInjection/DIContext"
 import { Logger } from "../logger/Logger"
 import { NodeLogger } from "../nodeLogger/NodeLogger"
+import { PermissionRepository } from "../simpleAuth/PermissionRepository"
 import { StructSyncServer } from "../structSync/StructSyncServer"
 import { StructSyncSession } from "../structSync/StructSyncSession"
 import { StructSyncExpress } from "../structSyncExpress/StructSyncExpress"
@@ -39,6 +40,8 @@ if (!DATABASE.tryGet("device")) {
     }))
 }
 
+const ioSessions = new WeakSet<StructSyncSession>()
+
 const auth = (() => {
     const apiContext = new DIContext(context)
 
@@ -58,15 +61,35 @@ const auth = (() => {
             DATABASE.put("user", user)
             return user
         },
-        sterilizeUser: user => new User({ ...user, salt: "", password: "" }),
+        sanitizeUser: user => new User({ ...user, salt: "", password: "" }),
         testUser: (user, password) => user.password == password,
-        disableRegistration: true
+        changeUserPassword: (user, passwordHashFactory) => {
+            user.password = passwordHashFactory(user.salt)
+            DATABASE.setDirty()
+        },
+        listUsers: () => [...DATABASE.list("user")],
+        deleteUser: (user) => {
+            DATABASE.delete("user", user.id)
+        },
+        permissions: new PermissionRepository(AuthController, [
+            [AuthController.PERMISSIONS.REGISTER, (meta) => ioSessions.has(meta.session)],
+            [AuthController.PERMISSIONS.CHANGE_OWN_PASSWORD, (meta) => ioSessions.has(meta.session)],
+            [AuthController.PERMISSIONS.CHANGE_PASSWORD, (meta) => ioSessions.has(meta.session)],
+            [AuthController.PERMISSIONS.DELETE_OWN_ACCOUNT, (meta) => ioSessions.has(meta.session)],
+            [AuthController.PERMISSIONS.DELETE_ACCOUNT, (meta) => ioSessions.has(meta.session)],
+            [AuthController.PERMISSIONS.LIST_USERS, (meta) => ioSessions.has(meta.session)]
+        ])
     }).register())
 
     server.use(auth.middleware)
 
     return auth
 })()
+
+if (DATABASE.getAll("user").size == 0) {
+    logger.warn`No users found, creating default account admin:admin`
+    auth.createAccount("admin", "admin")
+}
 
 io.use(async (socket, next) => {
     const token = socket.handshake.auth.token
@@ -88,15 +111,18 @@ io.use(async (socket, next) => {
     const deviceController = ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
     ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
     ioContext.instantiate(() => FileBrowserController.make().register())
+    ioContext.instantiate(() => auth.register())
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
         sessionContext.provide(MessageBridge, () => new MessageBridge.Generic(socket))
         const session = sessionContext.provide(StructSyncSession, "default")
+        ioSessions.add(session)
 
         session.onError.add(null, (error) => logger.error`${error}`)
 
         sessionContext.guard(personalTerminalSpawner.createFinalizer(session))
+        sessionContext.guard(() => ioSessions.delete(session))
 
         socket.on("disconnect", () => {
             sessionContext.dispose()

@@ -2,6 +2,7 @@ import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "
 import { unreachable } from "../../comTypes/util"
 import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
+import { DATABASE } from "../DATABASE"
 import { TerminalManager } from "../terminal/TerminalManager"
 
 export class ServiceController extends ServiceContract.defineController() {
@@ -11,6 +12,7 @@ export class ServiceController extends ServiceContract.defineController() {
     public impl = super.impl({
         setLabel: async ({ label }) => {
             this.mutate(v => v.config.label = label)
+            DATABASE.setDirty()
             this.onInfoChanged.emit()
         },
         start: async () => {
@@ -25,6 +27,10 @@ export class ServiceController extends ServiceContract.defineController() {
             if (this.state == "running") throw new ClientError("Cannot update service in current state")
             if (!this.definition.scripts.update) throw new ClientError("Service does not have an update script")
             await this.update()
+        },
+        setScheduler: async ({ scheduler }) => {
+            this.mutate(v => v.config.scheduler = scheduler)
+            DATABASE.setDirty()
         }
     })
 

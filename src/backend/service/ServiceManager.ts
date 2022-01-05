@@ -32,6 +32,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             const config = new ServiceConfig({
                 label, path,
                 id: makeRandomID(),
+                scheduler: "disabled"
             })
 
             const result = await ServiceRepository.loadService(config)
@@ -98,6 +99,10 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             this.updateServiceInfo(service)
         })
         service.terminalManager = this.terminalManager
+
+        if (service.config.scheduler != "disabled") {
+            service.start()
+        }
     }
 
     public updateServiceInfo(service: ServiceController, shouldDelete?: boolean): void

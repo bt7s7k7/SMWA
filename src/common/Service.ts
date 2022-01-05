@@ -4,6 +4,7 @@ import { ActionType } from "../structSync/ActionType"
 import { StructSyncContract } from "../structSync/StructSyncContract"
 
 export const ServiceState_t = Type.stringUnion("running", "updating", "stopped", "error")
+export const ServiceScheduler_t = Type.stringUnion("disabled", "autostart")
 
 export class ServiceInfo extends Struct.define("ServiceInfo", {
     label: Type.string,
@@ -14,9 +15,16 @@ export class ServiceInfo extends Struct.define("ServiceInfo", {
 export class ServiceConfig extends Struct.define("ServiceConfig", {
     id: Type.string,
     label: Type.string,
-    path: Type.string
+    path: Type.string,
+    scheduler: ServiceScheduler_t
 }) { }
-Type.defineMigrations(ServiceConfig.baseType, [])
+Type.defineMigrations(ServiceConfig.baseType, [
+    {
+        version: 2,
+        desc: "Added scheduler",
+        migrate: v => Object.assign(v, { scheduler: "disabled" })
+    }
+])
 
 export class ServiceDefinition extends Struct.define("ServiceDefinition", {
     name: Type.string,
@@ -25,7 +33,7 @@ export class ServiceDefinition extends Struct.define("ServiceDefinition", {
         update: Type.string.as(Type.nullable)
     })
 }) { }
-Type.defineMigrations(ServiceConfig.baseType, [])
+Type.defineMigrations(ServiceDefinition.baseType, [])
 
 export const ServiceContract = StructSyncContract.define(class Service extends Struct.define("Service", {
     state: ServiceState_t,
@@ -39,8 +47,9 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
 }, {
     setLabel: ActionType.define("setLabel", Type.object({ label: Type.string }), Type.empty),
     start: ActionType.define("start", Type.empty, Type.empty),
-    stop: ActionType.define("start", Type.empty, Type.empty),
-    update: ActionType.define("start", Type.empty, Type.empty),
+    stop: ActionType.define("stop", Type.empty, Type.empty),
+    update: ActionType.define("update", Type.empty, Type.empty),
+    setScheduler: ActionType.define("setScheduler", Type.object({ scheduler: ServiceScheduler_t }), Type.empty)
 })
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {

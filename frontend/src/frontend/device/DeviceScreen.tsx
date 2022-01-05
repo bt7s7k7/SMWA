@@ -6,6 +6,7 @@ import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
 import { StateCard } from "../../vue3gui/StateCard"
 import { TextField } from "../../vue3gui/TextField"
+import { UsersView } from "../auth/UsersView"
 import { STATE } from "../State"
 import { formatDate, formatTime } from "../util"
 
@@ -86,6 +87,8 @@ export const DeviceScreen = (defineComponent({
                             <pre class="m-0 ml-5 mt-1">{v}</pre>
                         </div>
                     ))}
+
+                    <UsersView class="border rounded p-2" />
                 </div>
             </div>
         )

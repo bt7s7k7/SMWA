@@ -20,6 +20,7 @@ class State extends EventListener {
     public readonly terminalSpawner!: PersonalTerminalSpawnerProxy
     public readonly fileBrowser!: FileBrowserProxy
     public readonly services!: ServiceManagerProxy
+    public readonly adminAuth!: AuthBridge
     public authReady = false
     public connected = false
     public connectionContext: DIContext | null = null
@@ -81,6 +82,7 @@ class State extends EventListener {
         const bridge = context.provide(MessageBridge, () => new MessageBridge.Generic(socket))
         bridge.obfuscateHandlerErrors = false
         context.provide(StructSyncClient, "default")
+        const adminAuth = context.instantiate(() => new AuthBridge())
 
         const device = context.instantiate(() => DeviceProxy.default())
         const terminalSpawner = context.instantiate(() => PersonalTerminalSpawnerProxy.default())
@@ -89,7 +91,7 @@ class State extends EventListener {
         const fileBrowser = context.instantiate(() => FileBrowserProxy.default())
         const services = context.instantiate(() => ServiceManagerProxy.default())
 
-        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services })
+        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services, adminAuth })
 
         this.fileBrowser.synchronize()
         this.device.synchronize()

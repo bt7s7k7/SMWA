@@ -1,9 +1,10 @@
 import { mdiCogs, mdiPlay, mdiStop, mdiUpdate } from "@mdi/js"
-import { computed, defineComponent, ref } from "vue"
+import { computed, defineComponent, ref, watch } from "vue"
 import { unreachable } from "../../comTypes/util"
 import { Button } from "../../vue3gui/Button"
 import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
+import { Tabs, useTabs } from "../../vue3gui/Tabs"
 import { TextField } from "../../vue3gui/TextField"
 import { stringifyError } from "../../vue3gui/util"
 import { DirectAccessButtons } from "../DirectAccessButtons"
@@ -70,6 +71,21 @@ export const ServiceView = (defineComponent({
             return formatTime(uptime)
         })
 
+        const schedulerConfig = useTabs({
+            "disabled": "Disabled",
+            "autostart": "Autostart"
+        })
+
+        watch(() => props.service, (service) => {
+            schedulerConfig.selected = service.config.scheduler
+        }, { immediate: true })
+
+        watch(() => schedulerConfig.selected, (scheduler) => {
+            if (scheduler != props.service.config.scheduler) {
+                props.service.setScheduler({ scheduler })
+            }
+        })
+
         return () => (
             <div class="flex-fill">
                 <div class="absolute-fill scroll flex column p-2 gap-2">
@@ -105,6 +121,10 @@ export const ServiceView = (defineComponent({
                         <div class="flex column">
                             <small class="muted">Uptime</small>
                             <div>{formattedUptime.value}</div>
+                        </div>
+                        <div class="flex column">
+                            <small class="muted">Scheduler</small>
+                            <Tabs tabs={schedulerConfig} />
                         </div>
                     </div>
                     {props.service.terminal && <div class="border rounded p-2 gap-2 flex row" key="terminal">
