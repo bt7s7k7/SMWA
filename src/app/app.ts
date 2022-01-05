@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { createServer } from "http"
 import { hostname } from "os"
 import { join } from "path"
