@@ -12,5 +12,6 @@ export const FileBrowserContract = StructSyncContract.define(class FileBrowser e
     homedir: Type.string
 }) { }, {
     listDirectory: ActionType.define("listDirectory", Type.object({ path: Type.string }), DirentInfo.ref().as(Type.array)),
-    deleteEntry: ActionType.define("deleteEntry", Type.object({ path: Type.string }), Type.empty)
+    deleteEntry: ActionType.define("deleteEntry", Type.object({ path: Type.string }), Type.empty),
+    mkdir: ActionType.define("mkdir", Type.object({ path: Type.string, name: Type.string }), Type.empty)
 })

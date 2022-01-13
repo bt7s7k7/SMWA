@@ -1,5 +1,6 @@
-import { readdir, rm } from "fs/promises"
+import { mkdir, readdir, rm } from "fs/promises"
 import { homedir } from "os"
+import { join } from "path"
 import { DirentInfo, FileBrowserContract } from "../common/FileBrowser"
 import { asError } from "../comTypes/util"
 import { ClientError } from "../structSync/StructSyncServer"
@@ -18,6 +19,15 @@ export class FileBrowserController extends FileBrowserContract.defineController(
             const result = await rm(path, { recursive: true }).catch(asError)
             if (result instanceof Error) {
                 throw new ClientError("Cannot delete this file")
+            }
+        },
+        mkdir: async ({ name, path }) => {
+            const fullPath = join(path, name)
+            const result = await mkdir(fullPath).catch(asError)
+            if (result instanceof Error) {
+                if (result.code == "EEXIST") throw new ClientError("Folder already exists")
+                else if (result.code == "ENOENT") throw new ClientError("Invalid path")
+                else throw result
             }
         }
     })

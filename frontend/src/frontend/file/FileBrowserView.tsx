@@ -1,5 +1,5 @@
-import { mdiChevronLeft, mdiFileOutline, mdiFolderOutline, mdiRefresh, mdiTrashCan } from "@mdi/js"
-import { computed, defineComponent, ref, watch } from "vue"
+import { mdiChevronLeft, mdiFileOutline, mdiFolderOutline, mdiFolderPlusOutline, mdiRefresh, mdiTrashCan } from "@mdi/js"
+import { ComponentPublicInstance, computed, defineComponent, ref, watch } from "vue"
 import { DirentInfo } from "../../common/FileBrowser"
 import { asError } from "../../comTypes/util"
 import { eventDecorator } from "../../eventDecorator"
@@ -10,7 +10,8 @@ import { Icon } from "../../vue3gui/Icon"
 import { LoadingIndicator } from "../../vue3gui/LoadingIndicator"
 import { Overlay } from "../../vue3gui/Overlay"
 import { StateCard } from "../../vue3gui/StateCard"
-import { asyncComputed, stringifyError } from "../../vue3gui/util"
+import { TextField } from "../../vue3gui/TextField"
+import { asyncComputed, stringifyError, useEventListener } from "../../vue3gui/util"
 import { STATE } from "../State"
 
 export const FileBrowserView = eventDecorator(defineComponent({
@@ -90,9 +91,105 @@ export const FileBrowserView = eventDecorator(defineComponent({
             ctx.emit("navigated", path)
         }, { immediate: true })
 
+        async function mkdir(event: MouseEvent) {
+            const name = ref("")
+            const success = await emitter.popup(
+                event.target as HTMLElement,
+                () => <TextField focus placeholder="Folder name" vModel={name.value} />,
+                {
+                    align: "over",
+                    props: { backdropCancels: true, class: "bg-white rounded shadow w-200 p-2" },
+                }
+            )
+
+            if (success && name.value) {
+                const work = emitter.work("Creating folder...")
+                const result = await STATE.fileBrowser.mkdir({ name: name.value, path: path.value }).catch(asError)
+                work.done()
+                if (result instanceof Error) {
+                    emitter.alert(stringifyError(result), { error: true })
+                } else {
+                    files.reload()
+                }
+            }
+        }
+
+        const container = ref<ComponentPublicInstance>()
+        const searchContainer = ref<HTMLElement>()
+        const search = ref("")
+        let searchPopupOpen = false
+        useEventListener(window, "keydown", (event) => {
+            if (searchPopupOpen) return
+            if (event.code == "Backspace") {
+                goBack()
+                return
+            }
+            if (event.key.length != 1) return
+            if (!document.activeElement || document.activeElement?.tagName != "INPUT") {
+                search.value = ""
+                searchPopupOpen = true
+                const popup = emitter.popup(
+                    container.value!.$el,
+                    () => <TextField focus placeholder="Folder name" vModel={search.value} onBlur={() => popup.controller.close()} />,
+                    {
+                        align: "bottom-left",
+                        props: { backdropCancels: true, class: "bg-white rounded shadow w-200 p-2" },
+                    }
+                )
+
+                popup.then((enter) => {
+                    if (enter && searchResultElement.value) {
+                        select(files.value![+searchResultElement.value.dataset.index!])
+                    }
+                    searchPopupOpen = false
+                    search.value = ""
+                })
+            }
+        })
+        let lastFoundElement: HTMLElement | null = null
+        const searchResultElement = computed(() => {
+            const query = search.value.toLowerCase()
+            if (!query) {
+                lastFoundElement = null
+                return null
+            }
+
+            let result: HTMLElement | null = null
+            for (const child of Array.from(searchContainer.value!.children) as HTMLElement[]) {
+                if (child.dataset.name!.toLowerCase().startsWith(query)) {
+                    result = child
+                    break
+                }
+            }
+            if (!result) {
+                for (const child of Array.from(searchContainer.value!.children) as HTMLElement[]) {
+                    if (child.dataset.name!.toLowerCase().includes(query)) {
+                        result = child
+                        break
+                    }
+                }
+            }
+
+            if (result) {
+                lastFoundElement = result
+                return result
+            } else {
+                return lastFoundElement
+            }
+        })
+
+        watch(searchResultElement, (current, last) => {
+            if (last == current) return
+            if (last) last.classList.remove("as-grow")
+            if (current) {
+                current.classList.add("as-grow")
+                current.scrollIntoView()
+            }
+        })
+
         return () => (
             <div class="flex column gap-2">
-                <Overlay variant="white" noTransition show={files.loading} class="flex-fill border rounded flex column">{{
+                <Overlay variant="white" noTransition show={files.loading} class="flex-fill border rounded flex column" ref={container}>{{
                     overlay: () => <LoadingIndicator />,
                     default: () => <>
                         <div class="flex row gap-1 border-bottom">
@@ -103,12 +200,15 @@ export const FileBrowserView = eventDecorator(defineComponent({
                                 </>)}
                             </div>
                             <div class="flex-fill"></div>
-                            <Button clear onClick={reload}> <Icon icon={mdiRefresh} /> </Button>
+                            <div>
+                                <Button clear onClick={mkdir}> <Icon icon={mdiFolderPlusOutline} /> </Button>
+                                <Button clear onClick={reload}> <Icon icon={mdiRefresh} /> </Button>
+                            </div>
                         </div>
                         <div class="flex-fill">
-                            <div class="absolute-fill flex column scroll">
-                                {files.value?.map(entry => (
-                                    <Button onClick={() => select(entry)} key={entry.name} clear class="flex row center-cross hover-check">
+                            <div class="absolute-fill flex column scroll" ref={searchContainer}>
+                                {files.value?.map((entry, index) => (
+                                    <Button onClick={() => select(entry)} key={entry.name} clear class="flex row center-cross hover-check" data-name={entry.name} data-index={index}>
                                         <Icon icon={entry.type == "directory" ? mdiFolderOutline : mdiFileOutline} />&nbsp;{entry.name}
                                         <div class="flex-fill"></div>
                                         <Button clear class="if-hover-fade" onClick={event => deleteEntry(event, entry)}> <Icon icon={mdiTrashCan} /> </Button>
