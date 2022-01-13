@@ -3,7 +3,7 @@
 const { writeFile } = require("fs/promises")
 const { userInfo } = require("os")
 const { join } = require("path")
-const { project, include, github, log, constants } = require("ucpem")
+const { project, include, github, log, constants, copy } = require("ucpem")
 
 include("frontend/ucpem.js")
 
@@ -39,4 +39,32 @@ project.script("make-systemd-unit", async () => {
     ].join("\n"))
 
     log(`Run "sudo cp ./smwa.service /etc/systemd/system/smwa.service" to install`)
+})
+
+project.script("esbuild", async () => {
+    const { build } = require("esbuild")
+
+    await build({
+        bundle: true,
+        format: "cjs",
+        entryPoints: ["./src/index.ts"],
+        outfile: "dist/index.js",
+        sourcemap: "external",
+        external: [
+            "node-pty"
+        ],
+        logLevel: "info",
+        platform: "node",
+        preserveSymlinks: true
+    })
+
+    await copy(join(constants.projectPath, "frontend/dist"), join(constants.projectPath, "dist/frontend/dist"), { quiet: true })
+    await writeFile(join(constants.projectPath, "dist/package.json"), JSON.stringify({
+        name: "smwa",
+        main: "index.js",
+        private: true,
+        dependencies: {
+            "node-pty": "^0.10.1"
+        }
+    }, null, 4))
 })

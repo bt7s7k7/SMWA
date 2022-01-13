@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { execSync } from "child_process"
 import { createServer } from "http"
 import { hostname } from "os"
 import { join } from "path"
@@ -28,6 +29,8 @@ import express = require("express")
 const context = new DIContext()
 context.provide(IDProvider, () => new IDProvider.Incremental())
 const logger = context.provide(Logger, () => new NodeLogger())
+
+logger.info`Config: ${ENV}`
 
 logger.info`Starting...`
 
@@ -131,7 +134,7 @@ io.use(async (socket, next) => {
     })
 }
 
-app.use("/", express.static(join(__dirname, "../../frontend/dist")))
+app.use("/", express.static(join(ENV.BASE_DIR, "frontend/dist")))
 
 http.listen(ENV.PORT, () => {
     logger.info`Listening on ${"http://" + stringifyAddress(http.address())}`

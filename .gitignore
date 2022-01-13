@@ -5,6 +5,7 @@ tsconfig.tsbuildinfo
 yarn-error.log
 /db.json
 /smwa.service
+/dist
 
 # UCPEM
 ucpem_ports
