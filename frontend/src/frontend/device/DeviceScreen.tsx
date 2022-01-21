@@ -8,11 +8,14 @@ import { StateCard } from "../../vue3gui/StateCard"
 import { TextField } from "../../vue3gui/TextField"
 import { UsersView } from "../auth/UsersView"
 import { STATE } from "../State"
+import { useTitle } from "../useTitle"
 import { formatDate, formatTime } from "../util"
 
 export const DeviceScreen = (defineComponent({
     name: "DeviceScreen",
     setup(props, ctx) {
+        useTitle()
+
         const emitter = useDynamicsEmitter()
 
         const labelElement = ref<HTMLElement>()

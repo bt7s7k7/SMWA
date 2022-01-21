@@ -8,10 +8,13 @@ import { Overlay } from "../../vue3gui/Overlay"
 import { TextField } from "../../vue3gui/TextField"
 import { stringifyError } from "../../vue3gui/util"
 import { STATE } from "../State"
+import { useTitle } from "../useTitle"
 
 export const LoginScreen = (defineComponent({
     name: "LoginScreen",
     setup(props, ctx) {
+        useTitle("Login")
+
         const loading = ref(false)
         const username = ref("")
         const password = ref("")

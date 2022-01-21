@@ -9,6 +9,7 @@ import { Overlay } from "../../vue3gui/Overlay"
 import { StateCard } from "../../vue3gui/StateCard"
 import { asyncComputed, stringifyError } from "../../vue3gui/util"
 import { STATE } from "../State"
+import { useTitle } from "../useTitle"
 import { ServiceProxy } from "./ServiceProxy"
 import { ServiceView } from "./ServiceView"
 
@@ -23,6 +24,8 @@ export const ServiceScreen = (defineComponent({
         const service = asyncComputed(() => serviceID.value, async id => id ? await ServiceProxy.make(STATE.connectionContext!, { track: true, id }) : null, {
             finalizer: v => v?.[DISPOSE]()
         })
+
+        useTitle(computed(() => service.value?.config.label ?? "Service"))
 
         const serviceError = asyncComputed(() => [serviceID.value, service.error] as const, async ([id, error]) => {
             if (!error || !stringifyError(error).includes("Server Error: No controller named")) return null
