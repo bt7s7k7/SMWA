@@ -24,7 +24,8 @@ export const TerminalView = (defineComponent({
             cols: 160,
             rows: 60,
             fontFamily: "monospace",
-            fontSize: 12
+            fontSize: 12,
+            convertEol: true
         })
 
         const terminalElement = ref<HTMLElement>()

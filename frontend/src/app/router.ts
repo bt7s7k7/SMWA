@@ -1,6 +1,7 @@
 import { h } from "vue"
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router"
 import { DeviceScreen } from "../frontend/device/DeviceScreen"
+import { EventLogScreen } from "../frontend/device/EventLogScreen"
 import { ServiceScreen } from "../frontend/service/ServiceScreen"
 import { PersonalTerminalView } from "../frontend/terminal/PersonalTerminalView"
 import { useTitle } from "../frontend/useTitle"
@@ -19,6 +20,11 @@ const routes: RouteRecordRaw[] = [
                 name: "DeviceScreen",
                 component: DeviceScreen,
                 path: "/"
+            },
+            {
+                name: "EventLogScreen",
+                component: EventLogScreen,
+                path: "/event-log"
             },
             {
                 name: "ServiceScreen",

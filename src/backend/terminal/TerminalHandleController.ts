@@ -12,7 +12,9 @@ const shell = platform() === "win32" ? "powershell.exe" : (process.env.SHELL ?? 
 
 export interface TerminalOptions {
     cwd?: string,
-    command?: string
+    command?: string,
+    virtual?: boolean,
+    id?: string
 }
 
 export class TerminalHandleController extends TerminalHandleContract.defineController() {
@@ -61,13 +63,17 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
         const timestamp = new Date().toISOString().substring(0, 19).replace(`T`, " ")
         message = ConsoleColorUtils.addStyle(`[${timestamp}] ${message}`, "gray") + ConsoleColorUtils.addStyle(" ", "white") + "\r\n"
         if (topMargin) message = "\r\n\r\n" + message
+        this.write(message)
+    }
+
+    public write(message: string) {
         this.onData.emit(message)
         this.terminal.write(message)
     }
 
     public static make(options: TerminalOptions) {
-        const id = makeRandomID()
-        const process_1 = pty.spawn(shell, options.command ? ["-c", options.command] : [], {
+        const id = options.id ?? makeRandomID()
+        const process_1 = options.virtual ? null : pty.spawn(shell, options.command ? ["-c", options.command] : [], {
             name: "xterm-color",
             cwd: options.cwd ?? process.env.HOME ?? "/",
             cols: 160,
@@ -90,16 +96,17 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
             handle.writeMessage(`$ ${options.command}`)
         }
 
-        process_1.onData((data) => {
-            handle.onData.emit(data)
-            terminal.write(data)
-        })
+        if (process_1) {
+            process_1.onData((data) => {
+                handle.write(data)
+            })
 
-        process_1.onExit(({ exitCode, signal }) => {
-            handle.writeMessage(`Process exited with code: ${exitCode}${signal ? `, signal: ${signal}` : ""}`, !!"use top margin")
-            handle.onClosed.emit(exitCode)
-            handle.process = null
-        })
+            process_1.onExit(({ exitCode, signal }) => {
+                handle.writeMessage(`Process exited with code: ${exitCode}${signal ? `, signal: ${signal}` : ""}`, !!"use top margin")
+                handle.onClosed.emit(exitCode)
+                handle.process = null
+            })
+        }
 
         return handle
     }

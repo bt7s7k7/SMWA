@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { execSync } from "child_process"
 import { createServer } from "http"
 import { hostname } from "os"
 import { join } from "path"
@@ -11,10 +10,11 @@ import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
 import { ServiceManager } from "../backend/service/ServiceManager"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
+import { TerminalHandleController } from "../backend/terminal/TerminalHandleController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
 import { DeviceConfig } from "../common/Device"
 import { User } from "../common/User"
-import { stringifyAddress } from "../comTypes/util"
+import { stringifyAddress, wrapFunction } from "../comTypes/util"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
 import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
 import { DIContext } from "../dependencyInjection/DIContext"
@@ -29,6 +29,12 @@ import express = require("express")
 const context = new DIContext()
 context.provide(IDProvider, () => new IDProvider.Incremental())
 const logger = context.provide(Logger, () => new NodeLogger())
+const eventLogTerminal = TerminalHandleController.make({ virtual: true, command: process.argv.join(" "), id: "__event_log" })
+logger.write = wrapFunction(logger.write, (base) => (...args) => {
+    const message = args[0]
+    eventLogTerminal.write(message)
+    base(...args)
+})
 
 logger.info`Config: ${ENV}`
 
@@ -116,6 +122,7 @@ io.use(async (socket, next) => {
     ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
     ioContext.instantiate(() => FileBrowserController.make().register())
     ioContext.instantiate(() => auth.register())
+    ioContext.instantiate(() => eventLogTerminal.register())
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
