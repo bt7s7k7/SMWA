@@ -1,8 +1,12 @@
 import { h } from "vue"
 
-export function formatDate(time: number) {
+export function formatDate(time: number, format: "vnode" | "string" | "date only string" = "vnode") {
     const date = new Date(time)
-    return [`${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate() + 1}`, h("br"), `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`]
+    const dateString = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${(date.getDate() + 1).toString().padStart(2, "0")}`
+    const timeString = `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}:${date.getSeconds().toString().padStart(2, "0")}`
+    if (format == "vnode") return [dateString, h("br"), timeString]
+    if (format == "string") return dateString + " " + timeString
+    if (format == "date only string") return dateString
 }
 
 export function formatTime(time: number) {
@@ -14,5 +18,5 @@ export function formatTime(time: number) {
     time -= minutes * 60
     const seconds = Math.floor(time)
 
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
 }

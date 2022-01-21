@@ -1,4 +1,4 @@
-import { mdiAlert, mdiCalendarText, mdiCog, mdiCogStop, mdiCogSync, mdiPlus, mdiServer } from "@mdi/js"
+import { mdiAlert, mdiCalendarText, mdiCog, mdiCogStop, mdiCogSync, mdiPlus, mdiRobot, mdiServer } from "@mdi/js"
 import { computed, defineComponent } from "vue"
 import { useRouter } from "vue-router"
 import { asError, autoFilter, unreachable } from "../comTypes/util"
@@ -20,6 +20,7 @@ export const Sidebar = (defineComponent({
 
         const items = computed(() => autoFilter<Item>([
             { to: "/", label: "Device", icon: mdiServer },
+            { to: "/machine-access", label: "Machine Access", icon: mdiRobot },
             { to: "/event-log", label: "Event Log", icon: mdiCalendarText },
             "separator",
 

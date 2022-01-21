@@ -46,12 +46,22 @@ export const UsersView = (defineComponent({
             }
 
             const popup = emitter.popup(event.target as HTMLElement, () => (
-                <div class="flex column">
+
+                <div class="flex column" >
                     <small> <Icon icon={mdiAccount} /> {user.id} </small>
                     <div class="border-bottom my-2"></div>
-                    <Button onClick={() => { popup.controller.close(); changePassword() }} class="text-left" clear> <Icon icon={mdiFormTextboxPassword} /> Change password </Button>
-                    <Button onClick={() => { popup.controller.close(); deleteUser() }} class="text-left" clear> <Icon icon={mdiTrashCan} /> Delete </Button>
-                </div>
+                    {user.id == "ServiceAccount" ? (
+                        <small class="w-max-200">
+                            The service account is created automatically. It's only
+                            used to authenticate machine access calls and cannot be used to login.
+                        </small>
+                    ) : (
+                        <>
+                            <Button onClick={() => { popup.controller.close(); changePassword() }} class="text-left" clear> <Icon icon={mdiFormTextboxPassword} /> Change password </Button>
+                            <Button onClick={() => { popup.controller.close(); deleteUser() }} class="text-left" clear> <Icon icon={mdiTrashCan} /> Delete </Button>
+                        </>
+                    )}
+                </div >
             ), {
                 align: "over",
                 props: { backdropCancels: true, class: "shadow rounded bg-white" }

@@ -3,6 +3,7 @@ import { createServer } from "http"
 import { hostname } from "os"
 import { join } from "path"
 import { Server } from "socket.io"
+import { AccessTokenListController } from "../backend/AccessTokenListController"
 import { AuthController } from "../backend/AuthController"
 import { DATABASE } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
@@ -21,7 +22,7 @@ import { DIContext } from "../dependencyInjection/DIContext"
 import { Logger } from "../logger/Logger"
 import { NodeLogger } from "../nodeLogger/NodeLogger"
 import { PermissionRepository } from "../simpleAuth/PermissionRepository"
-import { StructSyncServer } from "../structSync/StructSyncServer"
+import { ClientError, StructSyncServer } from "../structSync/StructSyncServer"
 import { StructSyncSession } from "../structSync/StructSyncSession"
 import { StructSyncExpress } from "../structSyncExpress/StructSyncExpress"
 import express = require("express")
@@ -52,7 +53,9 @@ if (!DATABASE.tryGet("device")) {
 
 const ioSessions = new WeakSet<StructSyncSession>()
 
-const auth = (() => {
+const accessTokenList = AccessTokenListController.make()
+
+const { auth } = (() => {
     const apiContext = new DIContext(context)
 
     const bridge = apiContext.provide(MessageBridge, () => new StructSyncExpress())
@@ -72,13 +75,15 @@ const auth = (() => {
             return user
         },
         sanitizeUser: user => new User({ ...user, salt: "", password: "" }),
-        testUser: (user, password) => user.password == password,
+        testUser: (user, password) => user.salt != "" && user.password == password,
         changeUserPassword: (user, passwordHashFactory) => {
+            if (user.id == "ServiceAccount") throw new ClientError("Cannot change password of ServiceAccount")
             user.password = passwordHashFactory(user.salt)
             DATABASE.setDirty()
         },
         listUsers: () => [...DATABASE.list("user")],
         deleteUser: (user) => {
+            if (user.id == "ServiceAccount") throw new ClientError("Cannot delete ServiceAccount")
             DATABASE.delete("user", user.id)
         },
         permissions: new PermissionRepository(AuthController, [
@@ -88,17 +93,24 @@ const auth = (() => {
             [AuthController.PERMISSIONS.DELETE_OWN_ACCOUNT, (meta) => ioSessions.has(meta.session)],
             [AuthController.PERMISSIONS.DELETE_ACCOUNT, (meta) => ioSessions.has(meta.session)],
             [AuthController.PERMISSIONS.LIST_USERS, (meta) => ioSessions.has(meta.session)]
-        ])
+        ]),
+        additionalTokenResolver: (token) => accessTokenList.testToken(token) ? DATABASE.get("user", "ServiceAccount") : null
     }).register())
 
     server.use(auth.middleware)
 
-    return auth
+    return { auth }
 })()
 
 if (DATABASE.getAll("user").size == 0) {
     logger.warn`No users found, creating default account admin:admin`
     auth.createAccount("admin", "admin")
+}
+
+if (!DATABASE.tryGet("user", "ServiceAccount")) {
+    logger.warn`Restoring service account`
+    DATABASE.put("user", new User({ id: "ServiceAccount", password: "", salt: "" }))
+
 }
 
 io.use(async (socket, next) => {
@@ -123,6 +135,7 @@ io.use(async (socket, next) => {
     ioContext.instantiate(() => FileBrowserController.make().register())
     ioContext.instantiate(() => auth.register())
     ioContext.instantiate(() => eventLogTerminal.register())
+    ioContext.instantiate(() => accessTokenList.register())
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)

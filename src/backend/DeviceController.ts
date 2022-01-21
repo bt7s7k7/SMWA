@@ -1,3 +1,5 @@
+import * as dns from "dns"
+import * as http from "http"
 import * as NodeOSUtils from "node-os-utils"
 import { arch, networkInterfaces, release, uptime } from "os"
 import { DeviceConfig, DeviceContract } from "../common/Device"
@@ -38,6 +40,18 @@ export class DeviceController extends DeviceContract.defineController() {
             setTimeout(refreshUsageData, 500)
         }
         refreshUsageData()
+
+        http.get({ host: "api.ipify.org", port: 80, path: "/" }, (res) => {
+            res.on("data", (ip) => {
+                ip = ip.toString()
+                device.mutate(v => v.interfaces.push(ip))
+                dns.reverse(ip, (err, hostnames) => {
+                    if (hostnames) {
+                        device.mutate(v => v.interfaces.push(...hostnames))
+                    }
+                })
+            })
+        })
 
         return device
     }
