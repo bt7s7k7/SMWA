@@ -5,7 +5,7 @@ import { join } from "path"
 import { Server } from "socket.io"
 import { AccessTokenListController } from "../backend/AccessTokenListController"
 import { AuthController } from "../backend/AuthController"
-import { DATABASE } from "../backend/DATABASE"
+import { DATABASE, SavedKeys } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
@@ -55,6 +55,11 @@ const ioSessions = new WeakSet<StructSyncSession>()
 
 const accessTokenList = AccessTokenListController.make()
 
+context.provide(TerminalManager, "default")
+const deviceController = context.instantiate(() => DeviceController.make(DATABASE.get("device")))
+const serviceManager = context.instantiate(() => new ServiceManager(deviceController))
+serviceManager.init()
+
 const { auth } = (() => {
     const apiContext = new DIContext(context)
 
@@ -97,7 +102,20 @@ const { auth } = (() => {
         additionalTokenResolver: (token) => accessTokenList.testToken(token) ? DATABASE.get("user", "ServiceAccount") : null
     }).register())
 
+    const keys = DATABASE.tryGet("savedKeys")
+    if (keys) {
+        auth.key = Buffer.from(keys.key, "base64")
+        auth.refreshKey = Buffer.from(keys.refreshKey, "base64")
+    } else {
+        DATABASE.put("savedKeys", new SavedKeys({
+            key: auth.key.toString("base64"),
+            refreshKey: auth.refreshKey.toString("base64")
+        }))
+    }
+
     server.use(auth.middleware)
+    apiContext.instantiate(() => deviceController.register())
+    apiContext.instantiate(() => serviceManager.connect())
 
     return { auth }
 })()
@@ -128,10 +146,9 @@ io.use(async (socket, next) => {
     const ioContext = new DIContext(context)
     ioContext.provide(StructSyncServer, "default")
 
-    ioContext.provide(TerminalManager, "default")
     const personalTerminalSpawner = ioContext.instantiate(() => new PersonalTerminalSpawnerController().register())
-    const deviceController = ioContext.instantiate(() => DeviceController.make(DATABASE.get("device")).register())
-    ioContext.instantiate(() => new ServiceManager(deviceController).register()).init()
+    ioContext.instantiate(() => deviceController.register())
+    ioContext.instantiate(() => serviceManager.connect())
     ioContext.instantiate(() => FileBrowserController.make().register())
     ioContext.instantiate(() => auth.register())
     ioContext.instantiate(() => eventLogTerminal.register())

@@ -5,6 +5,7 @@ import { StructSyncContract } from "../structSync/StructSyncContract"
 
 export class DeviceConfig extends Struct.define("DeviceConfig", {
     label: Type.string,
+    deployPath: Type.string.as(Type.nullable)
 }) { }
 
 Type.defineMigrations(DeviceConfig.baseType, [])
@@ -18,5 +19,6 @@ export const DeviceContract = StructSyncContract.define(class Device extends Str
     memUsage: Type.number,
     errors: Type.string.as(Type.array)
 }) { }, {
-    setLabel: ActionType.define("setLabel", Type.object({ label: Type.string }), Type.empty)
+    setLabel: ActionType.define("setLabel", Type.object({ label: Type.string }), Type.empty),
+    setDeployPath: ActionType.define("setDeployPath", Type.object({ path: Type.string }), Type.empty)
 })

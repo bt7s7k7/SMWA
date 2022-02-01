@@ -6,6 +6,7 @@ import { Button } from "../../vue3gui/Button"
 import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
 import { stringifyError } from "../../vue3gui/util"
+import { FolderSelectPopup } from "../file/FolderSelectPopup"
 import { STATE } from "../State"
 import { useTitle } from "../useTitle"
 import { formatDate } from "../util"
@@ -38,6 +39,13 @@ export const MachineAccessScreen = (defineComponent({
             if (result instanceof Error) {
                 emitter.alert(stringifyError(result), { error: true })
             }
+        }
+
+        async function openDeployPathPopup(event: MouseEvent) {
+            const newPath = await emitter.genericModal(FolderSelectPopup, {
+                props: { cancelButton: true, okButton: "Select" },
+                contentProps: { initialPath: STATE.device.config.deployPath }
+            })
         }
 
         return () => (
@@ -73,6 +81,9 @@ export const MachineAccessScreen = (defineComponent({
                     <div>
                         {STATE.device.interfaces.map(v => <pre class="m-0">{v}</pre>)}
                     </div>
+
+                    <h3 class="m-0">Deploy path</h3>
+                    <Button onClick={openDeployPathPopup} clear class="text-left">{STATE.device.config.deployPath ?? <code>{"<"}unset{">"}</code>}</Button>
                 </div>
             </div>
         )

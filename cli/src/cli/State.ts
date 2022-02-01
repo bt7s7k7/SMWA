@@ -1,0 +1,176 @@
+import chalk from "chalk"
+import { readFile, writeFile } from "fs/promises"
+import { DeviceContract } from "../common/Device"
+import { ServiceContract, ServiceManagerContract, ServiceState_t } from "../common/Service"
+import { asError } from "../comTypes/util"
+import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
+import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
+import { DIContext } from "../dependencyInjection/DIContext"
+import { Type } from "../struct/Type"
+import { StructSyncClient } from "../structSync/StructSyncClient"
+import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
+import { Config } from "./Config"
+import { UI } from "./UI"
+
+const COLORS_PER_STATE: Record<Type.GetTypeFromTypeWrapper<typeof ServiceState_t>, (v: string) => string> = {
+    error: chalk.redBright,
+    running: chalk.greenBright,
+    stopped: chalk.gray,
+    updating: chalk.blueBright
+}
+
+const serviceManagerProxy = ServiceManagerContract.defineProxy()
+const deviceProxy = DeviceContract.defineProxy()
+const serviceProxy = ServiceContract.defineProxy()
+export class State {
+    public readonly context = new DIContext()
+
+    public async getServiceList() {
+        const work = UI.indeterminateProgress("Loading service list...")
+        const result = await serviceManagerProxy.make(this.context, { track: false }).catch(asError)
+        work.done()
+        if (result instanceof Error) {
+            UI.error(`Failed to fetch data from the server: ${result.message}`)
+            return null
+        } else {
+            return result.serviceList
+        }
+    }
+
+    public async getDeviceInfo() {
+        const work = UI.indeterminateProgress("Loading device info...")
+        const result = await deviceProxy.make(this.context, { track: false }).catch(asError)
+        work.done()
+        if (result instanceof Error) {
+            UI.error(`Failed to fetch data from the server: ${result.message}`)
+            return null
+        } else {
+            return result
+        }
+    }
+
+    public async getServiceInfo() {
+        const id = this.config.service
+        if (!id) return null
+        const work = UI.indeterminateProgress("Loading service info...")
+        const result = await serviceProxy.make(this.context, { id, track: false }).catch(asError)
+        work.done()
+        if (result instanceof Error) {
+            UI.error(`Failed to fetch data from the server: ${result.message}`)
+            return null
+        } else {
+            return result
+        }
+    }
+
+    public async save() {
+        await writeFile("./smwa-deploy.json", JSON.stringify(this.config.serialize(), null, 4))
+    }
+
+    public setService(service: string) {
+        this.config.service = service
+    }
+
+    public async openServiceSelection() {
+        const services = await this.getServiceList()
+        if (services == null) return
+
+        const service = await UI.select("Selected target service", services, v => v.label)
+        if (service == null) return
+
+        this.setService(service.id)
+    }
+
+    public async printInfo() {
+        const device = await this.getDeviceInfo()
+        if (!device) {
+            UI.error("Failed to fetch device data")
+            return
+        }
+
+        UI.writeLine(`${chalk.bold("Server:")} ${this.config.url}`)
+        UI.writeLine(` ${chalk.bold("Label:")} ${device.config.label}`)
+        UI.writeLine(`    ${chalk.bold("OS:")} ${device.os}`)
+
+        const services = await this.getServiceList()
+        if (!services) {
+            UI.error("Filed to fetch services")
+            return
+        }
+
+        UI.writeLine("")
+        UI.writeLine(chalk.bold(`Services:`))
+        for (const service of services) {
+            UI.writeLine(`  ${COLORS_PER_STATE[service.state](service.label)} ${service.id == this.config.service ? "(*)" : ""}`)
+        }
+
+
+        if (this.config.service) {
+            const service = await this.getServiceInfo()
+            if (!service) {
+                UI.error("Failed to fetch service data")
+                return
+            }
+
+            UI.writeLine("")
+            UI.writeLine(`  ${chalk.bold("Service:")} ${service.config.label} ${chalk.grey(`(${service.config.id})`)}`)
+            UI.writeLine(`     ${chalk.bold("Type:")} ${service.definition.name}`)
+            UI.writeLine(`     ${chalk.bold("Path:")} ${service.config.path}`)
+            UI.writeLine(`    ${chalk.bold("State:")} ${COLORS_PER_STATE[service.state](service.state.toUpperCase())}`)
+            UI.writeLine(`${chalk.bold("Scheduler:")} ${service.config.scheduler}`)
+        }
+    }
+
+    constructor(
+        public readonly config: Config
+    ) {
+        this.context.provide(IDProvider, () => new IDProvider.Incremental())
+        this.context.provide(MessageBridge, () => new StructSyncAxios(config.url))
+        this.context.provide(StructSyncClient, "default")
+    }
+
+    public static async createFromUserInput() {
+        const url = await UI.prompt("Enter server URL")
+        if (!url) return null
+        const token = await UI.prompt("Enter access token")
+        if (!token) return null
+
+        const state = new State(new Config({ url, token }))
+        const result = await state.getDeviceInfo()
+        if (result == null) {
+            UI.error("Aborting initialization. Make sure the server url includes the api path.")
+            return null
+        }
+
+        UI.success(`Connected to device "${result.config.label}"`)
+
+        await state.openServiceSelection()
+
+        await state.printInfo()
+
+        return state
+    }
+
+    public static async createFromConfig() {
+        const result = await readFile("./smwa-deploy.json").catch(asError)
+        if (result instanceof Error) {
+            if (result.code == "ENOENT") {
+                UI.error("No deploy file found")
+                return null
+            }
+
+            throw result
+        }
+
+        let config: Config
+        try {
+            config = Config.deserialize(JSON.parse(result.toString()))
+        } catch (err: any) {
+            UI.error("Failed to load deploy file:" + err.message)
+            return null
+        }
+
+        const state = new State(config)
+        return state
+    }
+}

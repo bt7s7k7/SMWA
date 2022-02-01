@@ -3,7 +3,7 @@ import { makeRandomID, unreachable } from "../../comTypes/util"
 import { DIContext } from "../../dependencyInjection/DIContext"
 import { Logger } from "../../logger/Logger"
 import { LogMarker } from "../../logger/ObjectDescription"
-import { ClientError } from "../../structSync/StructSyncServer"
+import { ClientError, StructSyncServer } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
 import { DeviceController } from "../DeviceController"
 import { TerminalManager } from "../terminal/TerminalManager"
@@ -16,6 +16,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
     public readonly terminalManager = DIContext.current.inject(TerminalManager)
     public readonly services = new Map<string, ServiceController>()
     public readonly serviceErrors = new Map<string, string>()
+    protected readonly servers: StructSyncServer[] = []
 
     public impl = super.impl({
         tryPath: async ({ path }) => {
@@ -91,7 +92,9 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             throw new Error(`Duplicate service loaded with id ${service.config.id}; "${service.config.label}" at ${service.config.path} vs "${duplicate.config.label}" at ${duplicate.config.path}`)
         }
 
-        this.context.instantiate(() => service.register())
+        for (const server of this.servers) {
+            service.register(server)
+        }
         this.services.set(service.config.id, service)
 
         this.updateServiceInfo(service)
@@ -122,6 +125,19 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             }
         }
     }
+
+    public connect() {
+        this.register()
+
+        const server = DIContext.current.inject(StructSyncServer)
+        this.servers.push(server)
+        for (const service of this.services.values()) {
+            service.register(server)
+        }
+
+        return this
+    }
+
 
     constructor(
         public readonly device: DeviceController

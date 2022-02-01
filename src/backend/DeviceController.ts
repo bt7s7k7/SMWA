@@ -9,7 +9,11 @@ import { DATABASE } from "./DATABASE"
 export class DeviceController extends DeviceContract.defineController() {
     public impl = super.impl({
         setLabel: async ({ label }) => {
-            await this.mutate(v => v.config.label = label)
+            this.mutate(v => v.config.label = label)
+            DATABASE.setDirty()
+        },
+        setDeployPath: async ({ path }) => {
+            this.mutate(v => v.config.deployPath = path)
             DATABASE.setDirty()
         }
     })
