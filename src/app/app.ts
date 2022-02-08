@@ -171,7 +171,9 @@ io.use(async (socket, next) => {
     })
 }
 
-app.use("/", express.static(join(ENV.BASE_DIR, "frontend/dist")))
+const distFolder = join(ENV.BASE_DIR, "frontend/dist")
+app.use("/", express.static(distFolder))
+app.use("/", (req, res) => res.status(200).sendFile(join(distFolder, "index.html")))
 
 http.listen(ENV.PORT, () => {
     logger.info`Listening on ${"http://" + stringifyAddress(http.address())}`
