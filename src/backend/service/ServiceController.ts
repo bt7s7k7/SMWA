@@ -1,3 +1,4 @@
+import AdmZip = require("adm-zip")
 import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
 import { unreachable } from "../../comTypes/util"
 import { EventEmitter } from "../../eventLib/EventEmitter"
@@ -43,8 +44,11 @@ export class ServiceController extends ServiceContract.defineController() {
         await this.openTerminal(this.definition.scripts.start, "running")
     }
 
-    public async stop() {
-        if (this.state == "stopped" || this.state == "error") throw new Error("Cannot stop service in current state")
+    public async stop(ignoreError?: boolean) {
+        if (this.state == "stopped" || this.state == "error") {
+            if (!ignoreError) throw new Error("Cannot stop service in current state")
+            else return
+        }
         if (!this.terminal) unreachable("Should have a terminal in running or updating state")
         const terminal = this.terminalManager.terminals.get(this.terminal) ?? unreachable("Should have a valid terminal id")
         this.setState("stopped")
@@ -100,6 +104,9 @@ export class ServiceController extends ServiceContract.defineController() {
         this.onInfoChanged.emit()
     }
 
+    public replaceDefinition(definition: ServiceDefinition) {
+        this.mutate(v => v.definition = definition)
+    }
 
     public static make(config: ServiceConfig, definition: ServiceDefinition) {
         return new ServiceController({

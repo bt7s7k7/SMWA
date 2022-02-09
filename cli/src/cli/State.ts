@@ -1,5 +1,8 @@
+import axios from "axios"
 import chalk from "chalk"
+import FormData from "form-data"
 import { readFile, writeFile } from "fs/promises"
+import { URL } from "url"
 import { DeviceContract } from "../common/Device"
 import { ServiceContract, ServiceManagerContract, ServiceState_t } from "../common/Service"
 import { asError } from "../comTypes/util"
@@ -24,6 +27,34 @@ const deviceProxy = DeviceContract.defineProxy()
 const serviceProxy = ServiceContract.defineProxy()
 export class State {
     public readonly context = new DIContext()
+    public readonly uploadURL = new URL("upload", this.config.url).href
+
+    public async deploy(zipData: Buffer) {
+        const data = new FormData()
+        data.append("file", zipData)
+        const uploadURL = new URL("upload", this.uploadURL)
+        uploadURL.searchParams.set("service", this.config.service!)
+        const result = await axios.post(uploadURL.href, data, {
+            headers: data.getHeaders({
+                "Authorization": "Bearer " + this.config.token,
+            }),
+            onUploadProgress: (event: { loaded: number, total: number }) => {
+                console.log(event)
+            },
+            maxBodyLength: Infinity
+        }).catch(asError)
+
+        if (result instanceof Error) {
+            if (axios.isAxiosError(result) && result.response) {
+                UI.error(`Upload error: ${result.response!.data}`)
+            } else {
+                UI.error(`Upload error: ${result.message}`)
+            }
+        } else {
+            UI.success("Done!")
+        }
+
+    }
 
     public async getServiceList() {
         const work = UI.indeterminateProgress("Loading service list...")
@@ -125,7 +156,7 @@ export class State {
         public readonly config: Config
     ) {
         this.context.provide(IDProvider, () => new IDProvider.Incremental())
-        this.context.provide(MessageBridge, () => new StructSyncAxios(config.url))
+        this.context.provide(MessageBridge, () => new StructSyncAxios(new URL("api", config.url).href))
         this.context.provide(StructSyncClient, "default")
     }
 

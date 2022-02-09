@@ -1,8 +1,15 @@
-import { writeFile } from "fs/promises"
+import AdmZip from "adm-zip"
+import { fdir } from "fdir"
+import fileSize from "file-size"
+import { readFile, writeFile } from "fs/promises"
 import { CLI } from "../cli/CLI"
 import { State } from "../cli/State"
 import { UI } from "../cli/UI"
 import { ServiceDefinition } from "../common/Service"
+
+process.on("SIGINT", function () {
+    process.exit(0)
+})
 
 void async function () {
     const cli = new CLI("smwa", {
@@ -35,6 +42,46 @@ void async function () {
                 await state.save()
             }
         },
+        deploy: {
+            desc: "Deploys files to the server",
+            callback: async ([dry]) => {
+                const state = await State.createFromConfig()
+                if (!state) return
+
+                const crawler = new fdir()
+                    .withRelativePaths()
+                    .withSymlinks()
+
+                if (state.config.include) {
+                    crawler.glob(...state.config.include)
+                }
+
+                const files = (await crawler.crawl(process.cwd()).withPromise()) as string[]
+                UI.success(`Found ${files.length} files to upload`)
+                if (dry) {
+                    console.log(files)
+                    return
+                }
+
+                const zipProgress = UI.indeterminateProgress("Packaging files...")
+                const zip = new AdmZip()
+                const queue: Promise<void>[] = []
+                for (const file of files) {
+                    queue.push((async () => {
+                        const content = await readFile(file)
+                        zip.addFile(file, content)
+                    })())
+                }
+                await Promise.all(queue)
+                const zipData = zip.toBuffer()
+                zipProgress.done()
+
+                UI.success(`Upload size: ${fileSize(zipData.byteLength).human("si")}`)
+                await state.deploy(zipData)
+
+            },
+            argc: NaN
+        },
         init: {
             desc: "Creates a SMWA service config",
             callback: async () => {
@@ -53,7 +100,8 @@ void async function () {
         }
     })
 
-    cli.run(process.argv.slice(2))
+    await cli.run(process.argv.slice(2))
+    process.exit(0)
 }().catch(err => {
     // eslint-disable-next-line no-console
     console.error(err)

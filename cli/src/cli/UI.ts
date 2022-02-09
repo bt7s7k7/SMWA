@@ -28,6 +28,9 @@ export namespace UI {
             done() {
                 writeLine("", "overwrite")
                 clearInterval(interval)
+            },
+            setMessage(newMessage: string) {
+                message = newMessage
             }
         }
     }
@@ -97,8 +100,6 @@ export namespace UI {
                 })
             }
             update(!!"no clear")
-
-
         })
     }
 }

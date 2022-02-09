@@ -10,11 +10,13 @@ import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
 import { ServiceManager } from "../backend/service/ServiceManager"
+import { ServiceRepository } from "../backend/service/ServiceRepository"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
 import { TerminalHandleController } from "../backend/terminal/TerminalHandleController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
 import { DeviceConfig } from "../common/Device"
 import { User } from "../common/User"
+import { Readwrite } from "../comTypes/types"
 import { stringifyAddress, wrapFunction } from "../comTypes/util"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
 import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
@@ -22,10 +24,13 @@ import { DIContext } from "../dependencyInjection/DIContext"
 import { Logger } from "../logger/Logger"
 import { NodeLogger } from "../nodeLogger/NodeLogger"
 import { PermissionRepository } from "../simpleAuth/PermissionRepository"
+import { SerializationError, Type } from "../struct/Type"
 import { ClientError, StructSyncServer } from "../structSync/StructSyncServer"
 import { StructSyncSession } from "../structSync/StructSyncSession"
 import { StructSyncExpress } from "../structSyncExpress/StructSyncExpress"
+import busboy = require("connect-busboy")
 import express = require("express")
+import AdmZip = require("adm-zip")
 
 const context = new DIContext()
 context.provide(IDProvider, () => new IDProvider.Incremental())
@@ -130,6 +135,79 @@ if (!DATABASE.tryGet("user", "ServiceAccount")) {
     DATABASE.put("user", new User({ id: "ServiceAccount", password: "", salt: "" }))
 
 }
+
+app.use("/upload", busboy())
+app.post("/upload", async (req, res) => {
+    try {
+        if (!req.busboy) {
+            res.status(405).end("Unsupported media type")
+            return
+        }
+
+        const authorization = req.headers.authorization
+        if (!authorization) {
+            res.status(401).end("Authorization required")
+            return
+        }
+        if (!authorization.startsWith("Bearer ")) {
+            res.status(400).end("Invalid authorization format")
+            return
+        }
+
+        const token = authorization.substring(7)
+        const user = await auth.resolveToken(token)
+        if (!user) {
+            res.status(403).end("Invalid token")
+            return
+        }
+        const { service } = Type.object({ service: Type.string }).deserialize(req.query)
+        const serviceController = serviceManager.services.get(service)
+        if (!serviceController) {
+            res.status(404).end("Service does not exist")
+            return
+        }
+
+        req.busboy.on("file", (field, stream, name) => {
+            if (field == "file") {
+                const chunks: Buffer[] = []
+                stream.on("data", (chunk) => chunks.push(chunk))
+                stream.on("end", async () => {
+                    try {
+                        const zipData = Buffer.concat(chunks)
+                        const zip = new AdmZip(zipData)
+                        const error = await ServiceRepository.applyServiceDeployment(serviceController, zip)
+
+                        if (error) {
+                            if (error.type == "error") {
+                                res.status(404).end(error.error)
+                            } else if (error.type == "not_found") {
+                                res.status(404).end("Missing definition file")
+                            }
+                        } else {
+                            res.status(200).end()
+                        }
+                    } catch (err) {
+                        // eslint-disable-next-line no-console
+                        console.error(err)
+                        res.status(500).end("Internal server error")
+                    }
+                })
+            }
+        })
+
+        req.pipe(req.busboy)
+
+    } catch (err) {
+        if (err instanceof SerializationError) {
+            res.status(404).end(err.message)
+            return
+        }
+
+        // eslint-disable-next-line no-console
+        console.error(err)
+        res.status(500).end("Internal server error")
+    }
+})
 
 io.use(async (socket, next) => {
     const token = socket.handshake.auth.token

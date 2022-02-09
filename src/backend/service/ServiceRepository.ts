@@ -1,7 +1,8 @@
-import { readFile } from "fs/promises"
+import AdmZip = require("adm-zip")
+import { mkdir, readFile, rm } from "fs/promises"
 import { join } from "path"
 import { ServiceConfig, ServiceDefinition } from "../../common/Service"
-import { asError } from "../../comTypes/util"
+import { asError, unreachable } from "../../comTypes/util"
 import { DATABASE } from "../DATABASE"
 import { ServiceController } from "./ServiceController"
 
@@ -47,5 +48,27 @@ export namespace ServiceRepository {
         const service = ServiceController.make(config, result)
 
         return { target: config, type: "success", service }
+    }
+
+    export async function reloadServiceDefinition(service: ServiceController) {
+        const newDefinition = await loadServiceDefinition(service.config.path, null)
+        if (!(newDefinition instanceof ServiceDefinition)) {
+            if (newDefinition.type == "success") unreachable()
+            return newDefinition
+        }
+
+        service.replaceDefinition(newDefinition)
+    }
+
+    export async function applyServiceDeployment(service: ServiceController, content: AdmZip) {
+        await service.stop(!!"ignore errors")
+        await rm(service.config.path, { recursive: true, force: true })
+        await mkdir(service.config.path)
+
+        // @ts-ignore
+        await new Promise<void>((resolve, reject) => content.extractAllToAsync(service.config.path, true, false, error => error ? reject(error) : resolve()))
+
+        const error = await reloadServiceDefinition(service)
+        if (error) return error
     }
 }
