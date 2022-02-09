@@ -230,7 +230,9 @@ io.use(async (socket, next) => {
     ioContext.instantiate(() => FileBrowserController.make().register())
     ioContext.instantiate(() => auth.register())
     ioContext.instantiate(() => eventLogTerminal.register())
-    ioContext.instantiate(() => accessTokenList.register())
+    ioContext.instantiate(() => accessTokenList.register());
+
+    (serviceManager.terminalManager as Readwrite<TerminalManager>).context = ioContext
 
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
