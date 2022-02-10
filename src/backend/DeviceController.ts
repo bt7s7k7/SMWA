@@ -55,6 +55,8 @@ export class DeviceController extends DeviceContract.defineController() {
                     }
                 })
             })
+
+            res.on("error", () => { })
         })
 
         return device
