@@ -1,6 +1,7 @@
 import AdmZip = require("adm-zip")
 import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
 import { unreachable } from "../../comTypes/util"
+import { DISPOSE } from "../../eventLib/Disposable"
 import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
@@ -10,6 +11,13 @@ import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceReposit
 export class ServiceController extends ServiceContract.defineController() {
     public readonly onInfoChanged = new EventEmitter()
     public terminalManager: TerminalManager = null!
+
+    public [DISPOSE]() {
+        super[DISPOSE]()
+        if (this.terminal) {
+            this.terminalManager.deleteTerminal(this.terminal)
+        }
+    }
 
     public impl = super.impl({
         setLabel: async ({ label }) => {
@@ -86,7 +94,7 @@ export class ServiceController extends ServiceContract.defineController() {
         return new ServiceInfo({
             id: this.config.id,
             label: this.config.label,
-            state: this.definition == null ? "error" : this.state
+            state: this.definition == null || this.error != null ? "error" : this.state
         })
     }
 

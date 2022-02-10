@@ -59,7 +59,8 @@ export const ServiceManagerContract = StructSyncContract.define(class ServiceMan
 }) { }, {
     tryPath: ActionType.define("tryPath", Type.object({ path: Type.string }), ServiceDefinition.ref()),
     createService: ActionType.define("createService", Type.object({ path: Type.string, label: Type.string }), Type.string),
-    deleteService: ActionType.define("deleteService", Type.object({ id: Type.string, deleteFiles: Type.boolean }), Type.empty)
+    deleteService: ActionType.define("deleteService", Type.object({ id: Type.string, deleteFiles: Type.boolean }), Type.empty),
+    createServiceDeploy: ActionType.define("createServiceDeploy", Type.object({ label: Type.string }), Type.object({ id: Type.string }))
 })
 
 /* interface Service {

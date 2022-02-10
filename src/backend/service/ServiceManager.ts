@@ -1,6 +1,8 @@
+import { join } from "path"
 import { ServiceConfig, ServiceDefinition, ServiceManagerContract } from "../../common/Service"
 import { makeRandomID, unreachable } from "../../comTypes/util"
 import { DIContext } from "../../dependencyInjection/DIContext"
+import { DISPOSE } from "../../eventLib/Disposable"
 import { Logger } from "../../logger/Logger"
 import { LogMarker } from "../../logger/ObjectDescription"
 import { ClientError, StructSyncServer } from "../../structSync/StructSyncServer"
@@ -54,6 +56,24 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             if (!service) throw new ClientError(`Cannot find service "${id}"`)
 
             await this.deleteService(service, deleteFiles)
+        },
+        createServiceDeploy: async ({ label }) => {
+            const deployPath = this.device.config.deployPath
+            if (deployPath == null) throw new ClientError("No deploy path set, see machine access screen")
+            const id = makeRandomID()
+            const filename = label.replace(/ (.)/g, (_, v) => v.toUpperCase()).replace(/[^\w]/g, "_") + "_" + id
+            const path = join(deployPath, filename)
+            const config = new ServiceConfig({
+                id, label, path,
+                scheduler: "disabled"
+            })
+
+            const service = ServiceController.make(config, null, "This service was not deployed yet")
+            DATABASE.put("service", service.config)
+            this.addService(service)
+            this.logger.info`Created new deploy service ${config.label}`
+
+            return { id }
         }
     })
 
@@ -63,7 +83,8 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             if (result.type == "success") {
                 this.addService(result.service)
             } else {
-                const error = stringifyServiceLoadFailure(result)
+                const error = this.device.config.deployPath && result.type == "not_found" && result.path.startsWith(this.device.config.deployPath) ? "Service was not deployed yet"
+                    : stringifyServiceLoadFailure(result)
                 this.logger.error`${LogMarker.rawText(error)}`
                 this.addService(ServiceController.make(result.target!, null, error))
             }
@@ -120,6 +141,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
 
         this.updateServiceInfo(service, !!"delete")
         this.services.delete(service.config.id)
+        service[DISPOSE]()
         DATABASE.delete("service", service.config.id)
     }
 

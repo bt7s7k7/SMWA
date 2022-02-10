@@ -42,10 +42,14 @@ export const MachineAccessScreen = (defineComponent({
         }
 
         async function openDeployPathPopup(event: MouseEvent) {
-            const newPath = await emitter.genericModal(FolderSelectPopup, {
+            const result = await emitter.genericModal(FolderSelectPopup, {
                 props: { cancelButton: true, okButton: "Select" },
                 contentProps: { initialPath: STATE.device.config.deployPath }
             })
+
+            if (result) {
+                STATE.device.setDeployPath({ path: result.path })
+            }
         }
 
         return () => (

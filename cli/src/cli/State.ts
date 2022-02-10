@@ -56,7 +56,7 @@ export class State {
 
     }
 
-    public async getServiceList() {
+    public async getServiceManager() {
         const work = UI.indeterminateProgress("Loading service list...")
         const result = await serviceManagerProxy.make(this.context, { track: false }).catch(asError)
         work.done()
@@ -64,8 +64,12 @@ export class State {
             UI.error(`Failed to fetch data from the server: ${result.message}`)
             return null
         } else {
-            return result.serviceList
+            return result
         }
+    }
+
+    public async getServiceList() {
+        return this.getServiceManager().then(v => v ? v.serviceList : null)
     }
 
     public async getDeviceInfo() {
@@ -106,10 +110,25 @@ export class State {
         const services = await this.getServiceList()
         if (services == null) return
 
-        const service = await UI.select("Selected target service", services, v => v.label)
+        const service = await UI.select("Selected target service", [...services, "new_service" as const], v => v == "new_service" ? chalk.yellowBright("New service") : v.label)
         if (service == null) return
 
-        this.setService(service.id)
+        if (service == "new_service") {
+            const label = await UI.prompt("Enter new service label")
+            if (!label) return
+
+            const manager = await this.getServiceManager()
+            if (!manager) return
+
+            const result = await manager.createServiceDeploy({ label }).catch(asError)
+            if (result instanceof Error) {
+                UI.error(`Failed to create service: ${result.message}`)
+            } else {
+                this.setService(result.id)
+            }
+        } else {
+            this.setService(service.id)
+        }
     }
 
     public async printInfo() {
@@ -145,7 +164,7 @@ export class State {
 
             UI.writeLine("")
             UI.writeLine(`  ${chalk.bold("Service:")} ${service.config.label} ${chalk.grey(`(${service.config.id})`)}`)
-            UI.writeLine(`     ${chalk.bold("Type:")} ${service.definition.name}`)
+            UI.writeLine(`     ${chalk.bold("Type:")} ${service.definition?.name ?? "<error>"}`)
             UI.writeLine(`     ${chalk.bold("Path:")} ${service.config.path}`)
             UI.writeLine(`    ${chalk.bold("State:")} ${COLORS_PER_STATE[service.state](service.state.toUpperCase())}`)
             UI.writeLine(`${chalk.bold("Scheduler:")} ${service.config.scheduler}`)
