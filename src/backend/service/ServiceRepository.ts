@@ -9,6 +9,14 @@ import { ServiceController } from "./ServiceController"
 const SERVICE_DEF_FILE = "smwa.json"
 type ServiceLoadResult = ({ type: "not_found", path: string } | { type: "error", error: string } | { type: "success", service: ServiceController }) & { target: ServiceConfig | null }
 
+export function stringifyServiceLoadFailure(result: ServiceLoadResult, config: ServiceConfig | null = null) {
+    config ??= result.target
+    if (!config) unreachable()
+    if (result.type == "success") unreachable()
+    return result.type == "not_found" ? `Missing definition file for service "${config.label}"(${config.id}) at ${result.path}`
+        : `Failed to load definition for "${config.label}"(${config.id}): ${result.error}`
+}
+
 export namespace ServiceRepository {
     export async function loadAllServices() {
         const queue: Promise<ServiceLoadResult>[] = []
@@ -45,25 +53,30 @@ export namespace ServiceRepository {
         const result = await loadServiceDefinition(path, config)
         if (!(result instanceof ServiceDefinition)) return result
 
-        const service = ServiceController.make(config, result)
+        const service = ServiceController.make(config, result, null)
 
         return { target: config, type: "success", service }
     }
 
     export async function reloadServiceDefinition(service: ServiceController) {
-        const newDefinition = await loadServiceDefinition(service.config.path, null)
-        if (!(newDefinition instanceof ServiceDefinition)) {
-            if (newDefinition.type == "success") unreachable()
-            return newDefinition
+        const result = await loadServiceDefinition(service.config.path, null)
+        if (!(result instanceof ServiceDefinition)) {
+            service.replaceDefinition(null, stringifyServiceLoadFailure(result, service.config))
+            if (result.type == "success") unreachable()
+            return result
+        } else {
+            service.replaceDefinition(result, null)
         }
+    }
 
-        service.replaceDefinition(newDefinition)
+    export async function deleteServiceFiles(service: ServiceController) {
+        await rm(service.config.path, { recursive: true, force: true })
     }
 
     export async function applyServiceDeployment(service: ServiceController, content: AdmZip) {
         const wasRunning = service.state == "running"
         await service.stop(!!"ignore errors")
-        await rm(service.config.path, { recursive: true, force: true })
+        await deleteServiceFiles(service)
         await mkdir(service.config.path)
 
         // @ts-ignore

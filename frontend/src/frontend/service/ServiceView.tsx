@@ -1,9 +1,12 @@
-import { mdiCogs, mdiPlay, mdiStop, mdiUpdate } from "@mdi/js"
+import { mdiCogs, mdiPlay, mdiStop, mdiTrashCan, mdiUpdate } from "@mdi/js"
 import { computed, defineComponent, ref, watch } from "vue"
-import { unreachable } from "../../comTypes/util"
+import { useRouter } from "vue-router"
+import { asError, unreachable } from "../../comTypes/util"
 import { Button } from "../../vue3gui/Button"
 import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
+import { Overlay } from "../../vue3gui/Overlay"
+import { StateCard } from "../../vue3gui/StateCard"
 import { Tabs, useTabs } from "../../vue3gui/Tabs"
 import { TextField } from "../../vue3gui/TextField"
 import { stringifyError } from "../../vue3gui/util"
@@ -20,6 +23,7 @@ export const ServiceView = (defineComponent({
     },
     setup(props, ctx) {
         const emitter = useDynamicsEmitter()
+        const router = useRouter()
 
         const labelElement = ref<HTMLElement>()
         async function showNamePopup() {
@@ -86,6 +90,37 @@ export const ServiceView = (defineComponent({
             }
         })
 
+        async function deleteService() {
+            let deleteFiles = false
+            if (!await emitter.alert("To what extend should the service be deleted", {
+                buttons: [
+                    { label: "Remove from list", variant: "primary", callback: close => close(true) },
+                    { label: "Delete files", variant: "danger", callback: close => { deleteFiles = true; close(true) } },
+                ],
+                props: {
+                    cancelButton: true
+                }
+            })) return
+
+            const work = emitter.work("Deleting...")
+            const result = await STATE.services.deleteService({ id: props.service.id, deleteFiles }).catch(asError)
+            work.done()
+            if (result instanceof Error) {
+                emitter.alert(stringifyError(result), { error: true })
+            } else {
+                router.push("/")
+            }
+        }
+
+        async function reloadDefinition() {
+            const work = emitter.work("Reloading definition...")
+            const result = await props.service.reloadDefinition().catch(asError)
+            work.done()
+            if (result instanceof Error) {
+                emitter.alert(stringifyError(result), { error: true })
+            }
+        }
+
         return () => (
             <div class="flex-fill">
                 <div class="absolute-fill scroll flex column p-2 gap-2">
@@ -97,14 +132,14 @@ export const ServiceView = (defineComponent({
                                     <h1 class="m-0">{props.service.config.label}</h1>
                                 </Button>
                             </h1>
-                            <div class="pl-1 muted small monospace">{props.service.definition.name} ({props.service.config.id})</div>
+                            <div class="pl-1 muted small monospace">{props.service.definition?.name ?? "<error>"} ({props.service.config.id})</div>
                         </div>
                         <div>
                             <DirectAccessButtons path={props.service.config.path} />
                         </div>
                     </div>
                     <div class="border rounded p-2 gap-10 flex row">
-                        <div class="flex column">
+                        <Overlay show={props.service.definition == null} variant="white" class="flex column">
                             <div>{
                                 props.service.state == "stopped" ? (
                                     <><Button clear onClick={startService}> <Icon icon={mdiPlay} /> </Button> <span class="text-danger monospace">STOPPED</span></>
@@ -116,8 +151,8 @@ export const ServiceView = (defineComponent({
                                     <><Button clear onClick={stopService}> <Icon icon={mdiStop} /> </Button> <span class="text-primary monospace">UPDATING</span></>
                                 ) : unreachable()
                             }</div>
-                            <Button clear onClick={updateService} disabled={props.service.state == "updating" || !props.service.definition.scripts.update} class="text-left"> <Icon icon={mdiUpdate} /> Update</Button>
-                        </div>
+                            <Button clear onClick={updateService} disabled={props.service.state == "updating" || props.service.definition == null || !props.service.definition.scripts.update} class="text-left"> <Icon icon={mdiUpdate} /> Update</Button>
+                        </Overlay>
                         <div class="flex column">
                             <small class="muted">Uptime</small>
                             <div>{formattedUptime.value}</div>
@@ -126,7 +161,22 @@ export const ServiceView = (defineComponent({
                             <small class="muted">Scheduler</small>
                             <Tabs tabs={schedulerConfig} />
                         </div>
+                        <div class="flex column">
+                            <small class="muted">Admin</small>
+                            <div>
+                                <Button onClick={deleteService} variant="danger" class="mr-1"> <Icon icon={mdiTrashCan} /> Delete</Button>
+                                <Button onClick={reloadDefinition} clear>Reload definition</Button>
+                            </div>
+                        </div>
                     </div>
+                    {props.service.error && <div class="border border-danger rounded text-danger p-2">
+                        <div class="flex column gap-4">
+                            <div class="flex row">
+                                <StateCard error class="flex-basis-8"></StateCard>
+                                <pre class="mr-10 my-0">{props.service.error}</pre>
+                            </div>
+                        </div>
+                    </div>}
                     {props.service.terminal && <div class="border rounded p-2 gap-2 flex row" key="terminal">
                         <TerminalView id={props.service.terminal} />
                     </div>}

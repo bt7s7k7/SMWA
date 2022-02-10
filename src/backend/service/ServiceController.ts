@@ -5,6 +5,7 @@ import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
 import { TerminalManager } from "../terminal/TerminalManager"
+import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
 
 export class ServiceController extends ServiceContract.defineController() {
     public readonly onInfoChanged = new EventEmitter()
@@ -17,14 +18,17 @@ export class ServiceController extends ServiceContract.defineController() {
             this.onInfoChanged.emit()
         },
         start: async () => {
+            if (this.definition == null) throw new ClientError("Cannot start a failed service")
             if (this.state == "running" || this.state == "updating") throw new ClientError("Cannot start service in current state")
             await this.start()
         },
         stop: async () => {
+            if (this.definition == null) throw new ClientError("Cannot stop a failed service")
             if (this.state != "running" && this.state != "updating") throw new ClientError("Cannot stop service in current state")
             await this.stop()
         },
         update: async () => {
+            if (this.definition == null) throw new ClientError("Cannot update a failed service")
             if (this.state == "running") throw new ClientError("Cannot update service in current state")
             if (!this.definition.scripts.update) throw new ClientError("Service does not have an update script")
             await this.update()
@@ -32,10 +36,24 @@ export class ServiceController extends ServiceContract.defineController() {
         setScheduler: async ({ scheduler }) => {
             this.mutate(v => v.config.scheduler = scheduler)
             DATABASE.setDirty()
+        },
+        reloadDefinition: async () => {
+            await this.stop(!!"ignore errors")
+
+            const error = await ServiceRepository.reloadServiceDefinition(this)
+            if (error) {
+                const errorMessage = stringifyServiceLoadFailure(error, this.config)
+                this.mutate(v => v.error = errorMessage)
+            } else {
+                this.mutate(v => v.error = null)
+            }
+
+            this.onInfoChanged.emit()
         }
     })
 
     public async start() {
+        if (this.definition == null) throw new Error("Cannot start a failed service")
         if (this.state == "running" || this.state == "updating") throw new Error("Cannot start service in current state")
         if (this.terminal) {
             this.terminalManager.deleteTerminal(this.terminal)
@@ -56,6 +74,7 @@ export class ServiceController extends ServiceContract.defineController() {
     }
 
     public async update() {
+        if (this.definition == null) throw new Error("Cannot update a failed service")
         if (this.state == "updating") throw new Error("Cannot update service in current state")
         if (!this.definition.scripts.update) throw new Error("Service does not have an update script")
 
@@ -67,7 +86,7 @@ export class ServiceController extends ServiceContract.defineController() {
         return new ServiceInfo({
             id: this.config.id,
             label: this.config.label,
-            state: this.state
+            state: this.definition == null ? "error" : this.state
         })
     }
 
@@ -104,13 +123,14 @@ export class ServiceController extends ServiceContract.defineController() {
         this.onInfoChanged.emit()
     }
 
-    public replaceDefinition(definition: ServiceDefinition) {
-        this.mutate(v => v.definition = definition)
+    public replaceDefinition(definition: ServiceDefinition | null, error: string | null = null) {
+        this.mutate(v => { v.definition = definition; v.error = error })
+        this.onInfoChanged.emit()
     }
 
-    public static make(config: ServiceConfig, definition: ServiceDefinition) {
+    public static make(config: ServiceConfig, definition: ServiceDefinition | null, error: string | null) {
         return new ServiceController({
-            config, definition,
+            config, definition, error,
             state: "stopped",
             terminal: null
         })

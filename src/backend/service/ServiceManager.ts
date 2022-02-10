@@ -1,4 +1,4 @@
-import { ServiceConfig, ServiceDefinition, ServiceInfo, ServiceManagerContract } from "../../common/Service"
+import { ServiceConfig, ServiceDefinition, ServiceManagerContract } from "../../common/Service"
 import { makeRandomID, unreachable } from "../../comTypes/util"
 import { DIContext } from "../../dependencyInjection/DIContext"
 import { Logger } from "../../logger/Logger"
@@ -8,14 +8,13 @@ import { DATABASE } from "../DATABASE"
 import { DeviceController } from "../DeviceController"
 import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceController } from "./ServiceController"
-import { ServiceRepository } from "./ServiceRepository"
+import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
 
 export class ServiceManager extends ServiceManagerContract.defineController() {
     public readonly context = DIContext.current
     public readonly logger = this.context.inject(Logger).prefix({ label: "SERV", color: "blue" })
     public readonly terminalManager = DIContext.current.inject(TerminalManager)
     public readonly services = new Map<string, ServiceController>()
-    public readonly serviceErrors = new Map<string, string>()
     protected readonly servers: StructSyncServer[] = []
 
     public impl = super.impl({
@@ -50,22 +49,11 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             this.logger.info`Created new service ${config.label}`
             return service.config.id
         },
-        getServiceError: async ({ id }) => {
-            return this.serviceErrors.get(id) ?? null
-        },
-        deleteService: async ({ id }) => {
-            const serviceConfig = DATABASE.tryGet("service", id)
-            if (!serviceConfig) throw new ClientError(`Cannot find service "${id}"`)
+        deleteService: async ({ id, deleteFiles }) => {
+            const service = this.services.get(id)
+            if (!service) throw new ClientError(`Cannot find service "${id}"`)
 
-            if (this.services.has(id)) {
-                // TODO: Delete service controller
-                unreachable()
-            }
-
-            this.serviceErrors.delete(id)
-            this.updateServiceInfo(id, !!"delete")
-            DATABASE.delete("service", id)
-            this.logger.info`Delete service ${serviceConfig.label}`
+            await this.deleteService(service, deleteFiles)
         }
     })
 
@@ -75,12 +63,9 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             if (result.type == "success") {
                 this.addService(result.service)
             } else {
-                const error =
-                    result.type == "not_found" ? `Missing definition file for service "${result.target!.label}"(${result.target!.id}) at ${result.path}`
-                        : `Failed to load definition for "${result.target!.label}"(${result.target!.id}): ${result.error}`
+                const error = stringifyServiceLoadFailure(result)
                 this.logger.error`${LogMarker.rawText(error)}`
-                this.mutate(v => v.serviceList.push(new ServiceInfo({ id: result.target!.id, label: result.target!.label, state: "error" })))
-                this.serviceErrors.set(result.target!.id, error)
+                this.addService(ServiceController.make(result.target!, null, error))
             }
         }
         this.logger.info`Services loaded`
@@ -124,6 +109,18 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
                 this.mutate(v => v.serviceList[index] = service.makeInfo())
             }
         }
+    }
+
+    public async deleteService(service: ServiceController, deleteFiles: boolean) {
+        await service.stop(!!"ignore errors")
+
+        if (deleteFiles) {
+            ServiceRepository.deleteServiceFiles(service)
+        }
+
+        this.updateServiceInfo(service, !!"delete")
+        this.services.delete(service.config.id)
+        DATABASE.delete("service", service.config.id)
     }
 
     public connect() {

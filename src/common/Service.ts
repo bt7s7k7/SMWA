@@ -39,7 +39,8 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     state: ServiceState_t,
     terminal: Type.string.as(Type.nullable),
     config: ServiceConfig.ref(),
-    definition: ServiceDefinition.ref(),
+    definition: ServiceDefinition.ref().as(Type.nullable),
+    error: Type.string.as(Type.nullable),
     /** When the service is running or updating, this contains the start time, else this contains the uptime */
     uptime: Type.number.as(Type.nullable)
 }) {
@@ -49,7 +50,8 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     start: ActionType.define("start", Type.empty, Type.empty),
     stop: ActionType.define("stop", Type.empty, Type.empty),
     update: ActionType.define("update", Type.empty, Type.empty),
-    setScheduler: ActionType.define("setScheduler", Type.object({ scheduler: ServiceScheduler_t }), Type.empty)
+    setScheduler: ActionType.define("setScheduler", Type.object({ scheduler: ServiceScheduler_t }), Type.empty),
+    reloadDefinition: ActionType.define("reloadDefinition", Type.empty, Type.empty)
 })
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {
@@ -57,8 +59,7 @@ export const ServiceManagerContract = StructSyncContract.define(class ServiceMan
 }) { }, {
     tryPath: ActionType.define("tryPath", Type.object({ path: Type.string }), ServiceDefinition.ref()),
     createService: ActionType.define("createService", Type.object({ path: Type.string, label: Type.string }), Type.string),
-    getServiceError: ActionType.define("getServiceError", Type.object({ id: Type.string }), Type.string.as(Type.nullable)),
-    deleteService: ActionType.define("deleteService", Type.object({ id: Type.string }), Type.empty)
+    deleteService: ActionType.define("deleteService", Type.object({ id: Type.string, deleteFiles: Type.boolean }), Type.empty)
 })
 
 /* interface Service {

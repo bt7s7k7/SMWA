@@ -10,7 +10,7 @@ import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
 import { ServiceManager } from "../backend/service/ServiceManager"
-import { ServiceRepository } from "../backend/service/ServiceRepository"
+import { ServiceRepository, stringifyServiceLoadFailure } from "../backend/service/ServiceRepository"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
 import { TerminalHandleController } from "../backend/terminal/TerminalHandleController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
@@ -178,11 +178,7 @@ app.post("/upload", async (req, res) => {
                         const error = await ServiceRepository.applyServiceDeployment(serviceController, zip)
 
                         if (error) {
-                            if (error.type == "error") {
-                                res.status(404).end(error.error)
-                            } else if (error.type == "not_found") {
-                                res.status(404).end("Missing definition file")
-                            }
+                            res.status(404).end(stringifyServiceLoadFailure(error, serviceController.config))
                         } else {
                             res.status(200).end()
                         }
