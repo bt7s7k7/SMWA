@@ -61,6 +61,7 @@ export namespace ServiceRepository {
     }
 
     export async function applyServiceDeployment(service: ServiceController, content: AdmZip) {
+        const wasRunning = service.state == "running"
         await service.stop(!!"ignore errors")
         await rm(service.config.path, { recursive: true, force: true })
         await mkdir(service.config.path)
@@ -70,5 +71,9 @@ export namespace ServiceRepository {
 
         const error = await reloadServiceDefinition(service)
         if (error) return error
+
+        if (service.config.scheduler == "autostart" || wasRunning) {
+            await service.start()
+        }
     }
 }
