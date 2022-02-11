@@ -14,7 +14,8 @@ export interface TerminalOptions {
     cwd?: string,
     command?: string,
     virtual?: boolean,
-    id?: string
+    id?: string,
+    env?: Record<string, string>
 }
 
 export class TerminalHandleController extends TerminalHandleContract.defineController() {
@@ -73,11 +74,18 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
 
     public static make(options: TerminalOptions) {
         const id = options.id ?? makeRandomID()
+        const env = process.env as Record<string, string>
+        delete env["PORT"]
+        delete env["DB_PATH"]
+        delete env["BASE_DIR"]
+        if (options.env) Object.assign(env, options.env)
+
         const process_1 = options.virtual ? null : pty.spawn(shell, options.command ? ["-c", options.command] : [], {
             name: "xterm-color",
             cwd: options.cwd ?? process.env.HOME ?? "/",
             cols: 160,
             rows: 60,
+            env
         })
 
         const terminal = new Terminal({

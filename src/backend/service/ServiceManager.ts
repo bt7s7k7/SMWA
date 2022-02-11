@@ -31,11 +31,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             } else unreachable()
         },
         createService: async ({ path, label }) => {
-            const config = new ServiceConfig({
-                label, path,
-                id: makeRandomID(),
-                scheduler: "disabled"
-            })
+            const config = ServiceConfig.make({ label, path })
 
             const result = await ServiceRepository.loadService(config)
 
@@ -63,10 +59,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             const id = makeRandomID()
             const filename = label.replace(/ (.)/g, (_, v) => v.toUpperCase()).replace(/[^\w]/g, "_") + "_" + id
             const path = join(deployPath, filename)
-            const config = new ServiceConfig({
-                id, label, path,
-                scheduler: "disabled"
-            })
+            const config = ServiceConfig.make({ id, label, path })
 
             const service = ServiceController.make(config, null, "This service was not deployed yet")
             DATABASE.put("service", service.config)

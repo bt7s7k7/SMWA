@@ -1,3 +1,4 @@
+import { makeRandomID } from "../comTypes/util"
 import { Struct } from "../struct/Struct"
 import { Type } from "../struct/Type"
 import { ActionType } from "../structSync/ActionType"
@@ -16,9 +17,23 @@ export class ServiceConfig extends Struct.define("ServiceConfig", {
     id: Type.string,
     label: Type.string,
     path: Type.string,
-    scheduler: ServiceScheduler_t
-}) { }
+    scheduler: ServiceScheduler_t,
+    env: Type.string.as(Type.record)
+}) {
+    public static make({ id = makeRandomID(), label, path }: { id?: string, label: string, path: string }) {
+        return new ServiceConfig({
+            id, label, path,
+            scheduler: "disabled",
+            env: {}
+        })
+    }
+}
 Type.defineMigrations(ServiceConfig.baseType, [
+    {
+        version: 3,
+        desc: "Added env",
+        migrate: v => Object.assign(v, { env: {} })
+    },
     {
         version: 2,
         desc: "Added scheduler",
@@ -51,7 +66,8 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     stop: ActionType.define("stop", Type.empty, Type.empty),
     update: ActionType.define("update", Type.empty, Type.empty),
     setScheduler: ActionType.define("setScheduler", Type.object({ scheduler: ServiceScheduler_t }), Type.empty),
-    reloadDefinition: ActionType.define("reloadDefinition", Type.empty, Type.empty)
+    reloadDefinition: ActionType.define("reloadDefinition", Type.empty, Type.empty),
+    setEnvVariable: ActionType.define("setEnvVariable", Type.object({ key: Type.string, value: Type.string.as(Type.nullable), replace: Type.string.as(Type.nullable) }), Type.empty)
 })
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {

@@ -14,6 +14,7 @@ import { DirectAccessButtons } from "../DirectAccessButtons"
 import { STATE } from "../State"
 import { TerminalView } from "../terminal/TerminalView"
 import { formatTime } from "../util"
+import { ServiceEnvPopup } from "./ServiceEnvPopup"
 import { ServiceProxy } from "./ServiceProxy"
 
 export const ServiceView = (defineComponent({
@@ -121,6 +122,18 @@ export const ServiceView = (defineComponent({
             }
         }
 
+        function editENV() {
+            emitter.modal(ServiceEnvPopup, {
+                contentProps: {
+                    service: props.service,
+                    class: "as-fill-card"
+                },
+                props: {
+                    cancelButton: "Close"
+                }
+            })
+        }
+
         return () => (
             <div class="flex-fill">
                 <div class="absolute-fill scroll flex column p-2 gap-2">
@@ -165,6 +178,7 @@ export const ServiceView = (defineComponent({
                             <small class="muted">Admin</small>
                             <div>
                                 <Button onClick={deleteService} variant="danger" class="mr-1"> <Icon icon={mdiTrashCan} /> Delete</Button>
+                                <Button onClick={editENV} clear>Edit ENV</Button>
                                 <Button onClick={reloadDefinition} clear>Reload definition</Button>
                             </div>
                         </div>
