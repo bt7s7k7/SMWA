@@ -99,6 +99,45 @@ void async function () {
                 await deploy(false)
             }
         },
+        "deploy env set": {
+            desc: "Sets environment variable in service :: Arguments: <key> <value>",
+            callback: async ([key, value]) => {
+                const state = await State.createFromConfig()
+                if (!state) return
+
+                if (await state.changeEnvVariable({ key, value })) UI.success("Variable set")
+            },
+            argc: 2
+        },
+        "deploy env delete": {
+            desc: "Removes environment variable in service :: Arguments: <key>",
+            callback: async ([key]) => {
+                const state = await State.createFromConfig()
+                if (!state) return
+
+                if (await state.changeEnvVariable({ key })) UI.success("Variable removed")
+            },
+            argc: 1
+        },
+        "deploy env rename": {
+            desc: "Renames environment variable in service :: Arguments: <key> <new key>",
+            callback: async ([replace, key]) => {
+                const state = await State.createFromConfig()
+                if (!state) return
+
+                if (await state.changeEnvVariable({ key, replace })) UI.success("Variable renamed")
+            },
+            argc: 1
+        },
+        "deploy env": {
+            desc: "Prints environment variables in service",
+            callback: async () => {
+                const state = await State.createFromConfig()
+                if (!state) return
+
+                await state.printServiceEnv()
+            }
+        },
         init: {
             desc: "Creates a SMWA service config",
             callback: async () => {

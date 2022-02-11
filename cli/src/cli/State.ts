@@ -171,6 +171,31 @@ export class State {
         }
     }
 
+    public async printServiceEnv() {
+        const service = await this.getServiceInfo()
+        if (!service) return
+
+        for (const [key, value] of Object.entries(service.config.env)) {
+            UI.writeLine(`${key}=${value}`)
+        }
+    }
+
+    public async changeEnvVariable(options: { key: string, value?: string, replace?: string }) {
+        const service = await this.getServiceInfo()
+        if (!service) return
+
+        const work = UI.indeterminateProgress("Working...")
+        const result = await service.setEnvVariable(options).catch(asError)
+        work.done()
+
+        if (result instanceof Error) {
+            UI.error(`Failed to change env: ${result.message}`)
+            return false
+        }
+
+        return true
+    }
+
     constructor(
         public readonly config: Config
     ) {
