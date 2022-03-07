@@ -1,9 +1,10 @@
 /// <reference path="./.vscode/config.d.ts" />
 
+const { spawnSync } = require("child_process")
 const { writeFile } = require("fs/promises")
 const { userInfo } = require("os")
 const { join } = require("path")
-const { project, include, github, log, constants, copy } = require("ucpem")
+const { project, include, github, log, constants, copy, run } = require("ucpem")
 
 include("frontend/ucpem.js")
 include("cli/ucpem.js")
@@ -69,3 +70,7 @@ project.script("esbuild", async () => {
         }
     }, null, 4))
 })
+
+project.script("smwa-cli", async (args) => {
+    spawnSync("node", [join(constants.projectPath, "cli/build/app/app.js"), ...args], { stdio: "inherit", shell: true })
+}, { argc: NaN, desc: "Runs the SMWA CLI tool" })
