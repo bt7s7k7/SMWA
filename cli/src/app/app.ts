@@ -145,13 +145,20 @@ void async function () {
                 if (!name) return
 
                 const definition = new ServiceDefinition({
-                    name,
-                    scripts: {
-                        start: "echo hello world!"
-                    }
+                    name
                 })
 
-                await writeFile("./smwa.json", JSON.stringify(definition.serialize(), null, 4))
+                const definitionData = definition.serialize()
+
+                delete definitionData.scripts
+                delete definitionData.servePath
+
+                const data = {
+                    $schema: "https://raw.githubusercontent.com/bt7s7k7/SMWA/master/schema.json",
+                    ...definitionData
+                }
+
+                await writeFile("./smwa.json", JSON.stringify(data, null, 4))
             }
         }
     })
