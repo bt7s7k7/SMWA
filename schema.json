@@ -13,18 +13,37 @@
             "type": "object",
             "properties": {
                 "start": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
                     "description": "Command to run when starting the service, cannot be used when the serve path is specified"
                 },
                 "update": {
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "null"
+                    ],
                     "description": "Command to run when updating the service"
                 }
             }
         },
         "servePath": {
-            "type": "string",
+            "type": [
+                "string",
+                "null"
+            ],
             "description": "Path to serve static files from, cannot be used when a start script is specified"
+        },
+        "include": {
+            "type": [
+                "array",
+                "null"
+            ],
+            "items": {
+                "type": "string"
+            },
+            "description": "Files to be included when this service is deployed"
         }
     },
     "required": [

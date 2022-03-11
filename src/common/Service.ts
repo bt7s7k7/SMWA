@@ -47,7 +47,8 @@ export class ServiceDefinition extends Struct.define("ServiceDefinition", {
         start: Type.string.as(Type.nullable),
         update: Type.string.as(Type.nullable)
     }).as(Type.nullable),
-    servePath: Type.string.as(Type.nullable)
+    servePath: Type.string.as(Type.nullable),
+    include: Type.string.as(Type.array).as(Type.nullable)
 }) { }
 Type.defineMigrations(ServiceDefinition.baseType, [])
 

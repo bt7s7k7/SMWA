@@ -4,7 +4,7 @@ import FormData from "form-data"
 import { readFile, writeFile } from "fs/promises"
 import { URL } from "url"
 import { DeviceContract } from "../common/Device"
-import { ServiceContract, ServiceManagerContract, ServiceState_t } from "../common/Service"
+import { ServiceContract, ServiceDefinition, ServiceManagerContract, ServiceState_t } from "../common/Service"
 import { asError } from "../comTypes/util"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
 import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
@@ -20,6 +20,28 @@ const COLORS_PER_STATE: Record<Type.GetTypeFromTypeWrapper<typeof ServiceState_t
     running: chalk.greenBright,
     stopped: chalk.gray,
     updating: chalk.blueBright
+}
+
+async function loadDefinition() {
+    const result = await readFile("./smwa.json").catch(asError)
+    if (result instanceof Error) {
+        if (result.code == "ENOENT") {
+            UI.error("No definition file found, run init to create a service")
+            return null
+        }
+
+        throw result
+    }
+
+    let definition: ServiceDefinition
+    try {
+        definition = ServiceDefinition.deserialize(JSON.parse(result.toString()))
+    } catch (err: any) {
+        UI.error("Failed to load deploy file:" + err.message)
+        return null
+    }
+
+    return definition
 }
 
 const serviceManagerProxy = ServiceManagerContract.defineProxy()
@@ -243,6 +265,13 @@ export class State {
         } catch (err: any) {
             UI.error("Failed to load deploy file:" + err.message)
             return null
+        }
+
+        const definition = await loadDefinition()
+        if (!definition) return null
+
+        if (definition.include) {
+            (config.include ?? (config.include = [])).unshift(...definition.include)
         }
 
         const state = new State(config)
