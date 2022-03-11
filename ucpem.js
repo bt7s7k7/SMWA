@@ -28,7 +28,7 @@ project.script("make-systemd-unit", async () => {
         ``,
         `[Service]`,
         `Environment=NODE_VERSION=16`,
-        `ExecStart=${join(process.env.NVM_DIR, "nvm-exec")} ${join(constants.projectPath, "build/app/app.js")}`,
+        `ExecStart=${join(process.env.NVM_DIR, "nvm-exec")} ${join(constants.projectPath, "build/index.js")}`,
         `WorkingDirectory=${constants.projectPath}`,
         `LimitNOFILE=4096`,
         `IgnoreSIGPIPE=false`,
