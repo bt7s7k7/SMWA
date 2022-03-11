@@ -52,6 +52,7 @@ export class State {
     public readonly uploadURL = new URL("upload", this.config.url).href
 
     public async deploy(zipData: Buffer) {
+        const uploading = UI.indeterminateProgress("Uploading...")
         const data = new FormData()
         data.append("file", zipData)
         const uploadURL = new URL("upload", this.uploadURL)
@@ -61,10 +62,12 @@ export class State {
                 "Authorization": "Bearer " + this.config.token,
             }),
             onUploadProgress: (event: { loaded: number, total: number }) => {
-                console.log(event)
+                uploading.setMessage(`Uploading... (${event.loaded}/${event.total})`)
             },
             maxBodyLength: Infinity
         }).catch(asError)
+
+        uploading.done()
 
         if (result instanceof Error) {
             if (axios.isAxiosError(result) && result.response) {

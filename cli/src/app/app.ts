@@ -2,6 +2,7 @@ import AdmZip from "adm-zip"
 import { fdir } from "fdir"
 import fileSize from "file-size"
 import { readFile, writeFile } from "fs/promises"
+import { resourceUsage } from "process"
 import { CLI } from "../cli/CLI"
 import { State } from "../cli/State"
 import { UI } from "../cli/UI"
@@ -19,11 +20,15 @@ async function deploy(dry: boolean) {
         .withRelativePaths()
         .withSymlinks()
 
-    if (state.config.include) {
-        crawler.glob(...state.config.include)
+    if (!state.config.include) {
+        UI.error("Files to be deployed are not set, create an include array in definition or deploy config file")
+        return
     }
+    crawler.glob(...state.config.include)
 
+    const crawlerProgress = UI.indeterminateProgress("Searching for files files...")
     const files = (await crawler.crawl(process.cwd()).withPromise()) as string[]
+    crawlerProgress.done()
     UI.success(`Found ${files.length} files to upload`)
 
     const zipProgress = UI.indeterminateProgress("Packaging files...")
