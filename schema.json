@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "$id": "https://raw.githubusercontent.com/bt7s7k7/SMWA/master/schema.json",
+    "title": "SMWA Service definition",
+    "description": "A config file defining a SMWA service",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name of the service type"
+        },
+        "scripts": {
+            "type": "object",
+            "properties": {
+                "start": {
+                    "type": "string",
+                    "description": "Command to run when starting the service, cannot be used when the serve path is specified"
+                },
+                "update": {
+                    "type": "string",
+                    "description": "Command to run when updating the service"
+                }
+            }
+        },
+        "servePath": {
+            "type": "string",
+            "description": "Path to serve static files from, cannot be used when a start script is specified"
+        }
+    },
+    "required": [
+        "name"
+    ]
+}

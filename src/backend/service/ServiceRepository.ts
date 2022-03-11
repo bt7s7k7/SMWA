@@ -45,6 +45,19 @@ export namespace ServiceRepository {
             return { target, type: "error", error: err.message }
         }
 
+        if (definition.scripts?.start != null) {
+            if (definition.servePath != null) {
+                return { target, type: "error", error: "Service cannot have both a start script and a serve path" }
+            }
+        } else {
+            if (definition.servePath != null) {
+                if (definition.scripts == null) definition.scripts = {}
+                definition.scripts.start = process.argv.slice(0, 2).join(" ") + " serve"
+            } else {
+                return { target, type: "error", error: "Service does not have a start script or a serve path" }
+            }
+        }
+
         return definition
     }
 

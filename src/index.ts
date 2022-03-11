@@ -65,6 +65,8 @@ if (process.argv[2]) {
 
             spawnSync("sudo", ["cp", "./smwa.service", "/etc/systemd/system/smwa.service"], { stdio: "inherit", shell: true })
             spawnSync("sudo", ["systemctl", "status", "smwa", "--no-pager"], { stdio: "inherit", shell: true })
+        } else if (command == "serve") {
+            require("./app/serve")
         } else {
             abort(`Invalid command`)
         }

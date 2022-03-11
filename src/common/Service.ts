@@ -44,9 +44,10 @@ Type.defineMigrations(ServiceConfig.baseType, [
 export class ServiceDefinition extends Struct.define("ServiceDefinition", {
     name: Type.string,
     scripts: Type.object({
-        start: Type.string,
+        start: Type.string.as(Type.nullable),
         update: Type.string.as(Type.nullable)
-    })
+    }).as(Type.nullable),
+    servePath: Type.string.as(Type.nullable)
 }) { }
 Type.defineMigrations(ServiceDefinition.baseType, [])
 

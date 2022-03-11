@@ -37,8 +37,8 @@
         "dev": "WAA_CONFIG_PATH=./config.json concurrently --raw --kill-others \"yarn watch\" \"yarn watch-run\"",
         "watch": "tsc --watch --preserveWatchOutput --noEmitOnError",
         "build": "tsc --preserveWatchOutput",
-        "watch-run": "nodemon --watch build --delay 1 -x \"node -r source-map-support/register --preserve-symlinks --inspect\" ./build/app/app.js",
-        "start": "node -r source-map-support/register --preserve-symlinks ./build/app/app.js",
+        "watch-run": "nodemon --watch build --delay 1 -x \"node -r source-map-support/register --preserve-symlinks --inspect\" ./build/index.js",
+        "start": "node -r source-map-support/register --preserve-symlinks ./build/index.js",
         "get-ucpem": "curl -L https://github.com/bt7s7k7/UCPeM/releases/latest/download/ucpem.js -o node_modules/.bin/ucpem",
         "lint": "eslint ."
     }

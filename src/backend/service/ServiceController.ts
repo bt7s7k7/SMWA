@@ -38,7 +38,7 @@ export class ServiceController extends ServiceContract.defineController() {
         update: async () => {
             if (this.definition == null) throw new ClientError("Cannot update a failed service")
             if (this.state == "running") throw new ClientError("Cannot update service in current state")
-            if (!this.definition.scripts.update) throw new ClientError("Service does not have an update script")
+            if (!this.definition.scripts?.update) throw new ClientError("Service does not have an update script")
             await this.update()
         },
         setScheduler: async ({ scheduler }) => {
@@ -79,11 +79,12 @@ export class ServiceController extends ServiceContract.defineController() {
     public async start() {
         if (this.definition == null) throw new Error("Cannot start a failed service")
         if (this.state == "running" || this.state == "updating") throw new Error("Cannot start service in current state")
+        if (!this.definition.scripts?.start) throw new Error("Service does not have a start script")
         if (this.terminal) {
             this.terminalManager.deleteTerminal(this.terminal)
         }
 
-        await this.openTerminal(this.definition.scripts.start, "running")
+        await this.openTerminal(this.definition.scripts?.start, "running")
     }
 
     public async stop(ignoreError?: boolean) {
@@ -100,10 +101,14 @@ export class ServiceController extends ServiceContract.defineController() {
     public async update() {
         if (this.definition == null) throw new Error("Cannot update a failed service")
         if (this.state == "updating") throw new Error("Cannot update service in current state")
-        if (!this.definition.scripts.update) throw new Error("Service does not have an update script")
+        if (!this.definition.scripts?.update) throw new Error("Service does not have an update script")
 
         if (this.state == "running") await this.stop()
-        await this.openTerminal(this.definition.scripts.update, "updating")
+
+        if (this.terminal) {
+            this.terminalManager.deleteTerminal(this.terminal)
+        }
+        await this.openTerminal(this.definition.scripts?.update, "updating")
     }
 
     public makeInfo() {
@@ -115,10 +120,14 @@ export class ServiceController extends ServiceContract.defineController() {
     }
 
     protected async openTerminal(command: string, state: this["state"]) {
+        const env = { ...this.config.env }
+        if (this.definition!.servePath != null) {
+            env.SERVE_PATH = this.definition!.servePath
+        }
+
         const terminal = this.terminalManager.openTerminal({
-            cwd: this.config.path,
-            env: this.config.env,
-            command
+            env, command,
+            cwd: this.config.path
         })
 
         this.mutate(v => { v.terminal = terminal.id })
