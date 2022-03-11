@@ -164,7 +164,7 @@ export const ServiceView = (defineComponent({
                                     <><Button clear onClick={stopService}> <Icon icon={mdiStop} /> </Button> <span class="text-primary monospace">UPDATING</span></>
                                 ) : unreachable()
                             }</div>
-                            <Button clear onClick={updateService} disabled={props.service.state == "updating" || props.service.definition == null || !props.service.definition.scripts.update} class="text-left"> <Icon icon={mdiUpdate} /> Update</Button>
+                            <Button clear onClick={updateService} disabled={props.service.state == "updating" || !props.service.definition?.scripts?.update} class="text-left"> <Icon icon={mdiUpdate} /> Update</Button>
                         </Overlay>
                         <div class="flex column">
                             <small class="muted">Uptime</small>
