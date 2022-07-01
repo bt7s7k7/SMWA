@@ -3,7 +3,7 @@ import { Type } from "../struct/Type"
 import dotenv = require("dotenv")
 
 // Change the base directory based on if we are bundled with esbuild or not
-const BASE_DIR = __filename.endsWith("/index.js") ? __dirname : join(__dirname, "../..")
+const BASE_DIR = __filename.endsWith("index.js") ? __dirname : join(__dirname, "../..")
 
 const Env_t = Type.namedType("env", {
     PORT: Type.string,
