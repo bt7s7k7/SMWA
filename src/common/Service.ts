@@ -58,6 +58,7 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     config: ServiceConfig.ref(),
     definition: ServiceDefinition.ref().as(Type.nullable),
     error: Type.string.as(Type.nullable),
+    adminUIName: Type.string,
     /** When the service is running or updating, this contains the start time, else this contains the uptime */
     uptime: Type.number.as(Type.nullable)
 }) {

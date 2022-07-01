@@ -16,6 +16,7 @@
         "node-pty": "^0.10.1",
         "socket.io": "^4.4.0",
         "source-map-support": "^0.5.19",
+        "stream-split": "^1.1.0",
         "xterm-addon-serialize": "^0.6.1",
         "xterm-headless": "^4.16.0"
     },

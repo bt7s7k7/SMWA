@@ -14,6 +14,7 @@ import { DirectAccessButtons } from "../DirectAccessButtons"
 import { STATE } from "../State"
 import { TerminalView } from "../terminal/TerminalView"
 import { formatTime } from "../util"
+import { ServiceAdminUI } from "./ServiceAdminUI"
 import { ServiceEnvPopup } from "./ServiceEnvPopup"
 import { ServiceProxy } from "./ServiceProxy"
 
@@ -191,6 +192,7 @@ export const ServiceView = (defineComponent({
                             </div>
                         </div>
                     </div>}
+                    <ServiceAdminUI service={props.service} />
                     {props.service.terminal && <div class="border rounded p-2 gap-2 flex row" key="terminal">
                         <TerminalView id={props.service.terminal} />
                     </div>}

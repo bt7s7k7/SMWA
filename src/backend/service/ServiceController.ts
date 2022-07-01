@@ -1,10 +1,12 @@
 import AdmZip = require("adm-zip")
+import { ADMIN_GUI_SOCKET_VARIABLE } from "../../adminUICommon/const"
 import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
 import { unreachable } from "../../comTypes/util"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
+import { ADMIN_UI_BRIDGE } from "../network"
 import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
 
@@ -125,6 +127,9 @@ export class ServiceController extends ServiceContract.defineController() {
             env.SERVE_PATH = this.definition!.servePath
         }
 
+        env[ADMIN_GUI_SOCKET_VARIABLE] = ADMIN_UI_BRIDGE.path
+        env["ADMIN_UI_NAME"] = this.adminUIName
+
         const terminal = this.terminalManager.openTerminal({
             env, command,
             cwd: this.config.path
@@ -166,6 +171,7 @@ export class ServiceController extends ServiceContract.defineController() {
         return new ServiceController({
             config, definition, error,
             state: "stopped",
+            adminUIName: "smwa-service." + config.id,
             terminal: null
         })
     }

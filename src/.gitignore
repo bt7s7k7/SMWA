@@ -10,3 +10,8 @@ comTypes
 structSyncExpress
 nodeLogger
 logger
+adminUIBridge
+adminUICommon
+virtualNetworkModem
+virtualNetwork
+registry

@@ -8,6 +8,7 @@ import { DATABASE, SavedKeys } from "../backend/DATABASE"
 import { DeviceController } from "../backend/DeviceController"
 import { ENV } from "../backend/ENV"
 import { FileBrowserController } from "../backend/FileBrowserController"
+import { ROOT_ROUTER } from "../backend/network"
 import { ServiceManager } from "../backend/service/ServiceManager"
 import { ServiceRepository, stringifyServiceLoadFailure } from "../backend/service/ServiceRepository"
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
@@ -27,6 +28,7 @@ import { SerializationError, Type } from "../struct/Type"
 import { ClientError, StructSyncServer } from "../structSync/StructSyncServer"
 import { StructSyncSession } from "../structSync/StructSyncSession"
 import { StructSyncExpress } from "../structSyncExpress/StructSyncExpress"
+import { VirtualModemServer } from "../virtualNetworkModem/VirtualModem"
 import busboy = require("connect-busboy")
 import express = require("express")
 import AdmZip = require("adm-zip")
@@ -232,8 +234,12 @@ io.use(async (socket, next) => {
     io.on("connect", socket => {
         const sessionContext = new DIContext(ioContext)
         sessionContext.provide(MessageBridge, () => new MessageBridge.Generic(socket))
+
         const session = sessionContext.provide(StructSyncSession, "default")
         ioSessions.add(session)
+
+        const modem = sessionContext.instantiate(() => new VirtualModemServer(ROOT_ROUTER.connect()))
+        sessionContext.guard(modem)
 
         session.onError.add(null, (error) => logger.error`${error}`)
 

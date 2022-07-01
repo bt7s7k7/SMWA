@@ -4,7 +4,7 @@ const { spawnSync } = require("child_process")
 const { writeFile } = require("fs/promises")
 const { userInfo } = require("os")
 const { join } = require("path")
-const { project, include, github, log, constants, copy, run } = require("ucpem")
+const { project, include, github, log, constants, copy } = require("ucpem")
 
 include("frontend/ucpem.js")
 include("cli/ucpem.js")
@@ -19,6 +19,7 @@ project.prefix("src").res("backend",
     github("bt7s7k7/Struct").res("structSyncExpress"),
     github("bt7s7k7/LogLib").res("nodeLogger"),
     github("bt7s7k7/SimpleServer").res("simpleDB"),
+    github("bt7s7k7/AdminGUI").res("adminUIBridge")
 )
 
 project.script("make-systemd-unit", async () => {

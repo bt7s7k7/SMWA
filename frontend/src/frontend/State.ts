@@ -7,6 +7,8 @@ import { DIContext } from "../dependencyInjection/DIContext"
 import { EventListener } from "../eventLib/EventListener"
 import { StructSyncClient } from "../structSync/StructSyncClient"
 import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
+import { VirtualPeer } from "../virtualNetwork/VirtualPeer"
+import { VirtualModemClient } from "../virtualNetworkModem/VirtualModem"
 import { AuthBridge } from "./auth/AuthBridge"
 import { AccessTokenListProxy } from "./device/AccessTokenListProxy"
 import { DeviceProxy } from "./device/DeviceProxy"
@@ -23,6 +25,7 @@ class State extends EventListener {
     public readonly services!: ServiceManagerProxy
     public readonly adminAuth!: AuthBridge
     public readonly accessTokens!: AccessTokenListProxy
+    public readonly virtualPeer!: Promise<VirtualPeer>
     public authReady = false
     public connected = false
     public connectionContext: DIContext | null = null
@@ -94,7 +97,10 @@ class State extends EventListener {
         const services = context.instantiate(() => ServiceManagerProxy.default())
         const accessTokens = context.instantiate(() => AccessTokenListProxy.default())
 
-        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services, adminAuth, accessTokens })
+        const modem = context.instantiate(() => new VirtualModemClient())
+        const  virtualPeer =  VirtualPeer.make(modem.connect())
+
+        Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services, adminAuth, accessTokens, virtualPeer })
 
         this.fileBrowser.synchronize()
         this.device.synchronize()
