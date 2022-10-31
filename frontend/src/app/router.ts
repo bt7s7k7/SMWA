@@ -1,5 +1,6 @@
 import { h } from "vue"
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router"
+import { AuthScreen } from "../frontend/device/AuthScreen"
 import { DeviceScreen } from "../frontend/device/DeviceScreen"
 import { EventLogScreen } from "../frontend/device/EventLogScreen"
 import { MachineAccessScreen } from "../frontend/device/MachineAccessScreen"
@@ -36,6 +37,11 @@ const routes: RouteRecordRaw[] = [
                 name: "ServiceScreen",
                 component: ServiceScreen,
                 path: "/service/:service"
+            },
+            {
+                name: "AuthScreen",
+                component: AuthScreen,
+                path: "/auth"
             },
             {
                 name: "404",

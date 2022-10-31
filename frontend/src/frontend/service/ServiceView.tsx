@@ -135,6 +135,23 @@ export const ServiceView = (defineComponent({
             })
         }
 
+        async function enableAuth() {
+            if (props.service.definition?.authSupport == false) return
+            if (STATE.device.config.authURL == null) {
+                if (await emitter.confirm("Auth URL is not set in Machine Access tab, do you want to set it now?")) {
+                    router.push("/machine-access")
+                }
+
+                return
+            }
+
+            props.service.setAuthEnabled({ enabled: true })
+        }
+
+        async function disableAuth() {
+            props.service.setAuthEnabled({ enabled: false })
+        }
+
         return () => (
             <div class="flex-fill">
                 <div class="absolute-fill scroll flex column p-2 gap-2">
@@ -181,6 +198,8 @@ export const ServiceView = (defineComponent({
                                 <Button onClick={deleteService} variant="danger" class="mr-1"> <Icon icon={mdiTrashCan} /> Delete</Button>
                                 <Button onClick={editENV} clear>Edit ENV</Button>
                                 <Button onClick={reloadDefinition} clear>Reload definition</Button>
+                                {props.service.config.authEnabled && <Button clear onClick={disableAuth}>Disable auth</Button>}
+                                {!props.service.config.authEnabled && props.service.definition?.authSupport && <Button clear onClick={enableAuth}>Enable auth</Button>}
                             </div>
                         </div>
                     </div>

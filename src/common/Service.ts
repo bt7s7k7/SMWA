@@ -18,17 +18,24 @@ export class ServiceConfig extends Struct.define("ServiceConfig", {
     label: Type.string,
     path: Type.string,
     scheduler: ServiceScheduler_t,
-    env: Type.string.as(Type.record)
+    env: Type.string.as(Type.record),
+    authEnabled: Type.boolean
 }) {
     public static make({ id = makeRandomID(), label, path }: { id?: string, label: string, path: string }) {
         return new ServiceConfig({
             id, label, path,
             scheduler: "disabled",
-            env: {}
+            env: {},
+            authEnabled: false
         })
     }
 }
 Type.defineMigrations(ServiceConfig.baseType, [
+    {
+        version: 4,
+        desc: "Added auth enabled",
+        migrate: v => Object.assign(v, { authEnabled: false })
+    },
     {
         version: 3,
         desc: "Added env",
@@ -48,7 +55,8 @@ export class ServiceDefinition extends Struct.define("ServiceDefinition", {
         update: Type.string.as(Type.nullable)
     }).as(Type.nullable),
     servePath: Type.string.as(Type.nullable),
-    include: Type.string.as(Type.array).as(Type.nullable)
+    include: Type.string.as(Type.array).as(Type.nullable),
+    authSupport: Type.boolean.as(Type.nullable)
 }) { }
 Type.defineMigrations(ServiceDefinition.baseType, [])
 
@@ -70,7 +78,8 @@ export const ServiceContract = StructSyncContract.define(class Service extends S
     update: ActionType.define("update", Type.empty, Type.empty),
     setScheduler: ActionType.define("setScheduler", Type.object({ scheduler: ServiceScheduler_t }), Type.empty),
     reloadDefinition: ActionType.define("reloadDefinition", Type.empty, Type.empty),
-    setEnvVariable: ActionType.define("setEnvVariable", Type.object({ key: Type.string, value: Type.string.as(Type.nullable), replace: Type.string.as(Type.nullable) }), Type.empty)
+    setEnvVariable: ActionType.define("setEnvVariable", Type.object({ key: Type.string, value: Type.string.as(Type.nullable), replace: Type.string.as(Type.nullable) }), Type.empty),
+    setAuthEnabled: ActionType.define("setAuthEnabled", Type.object({ enabled: Type.boolean }), Type.empty)
 })
 
 export const ServiceManagerContract = StructSyncContract.define(class ServiceManager extends Struct.define("ServiceManager", {

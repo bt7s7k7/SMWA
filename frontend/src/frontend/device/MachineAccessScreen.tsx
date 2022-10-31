@@ -1,10 +1,11 @@
-import { mdiKey, mdiPlus, mdiTrashCan } from "@mdi/js"
-import { defineComponent } from "vue"
+import { mdiClose, mdiKey, mdiPlus, mdiTrashCan } from "@mdi/js"
+import { defineComponent, ref } from "vue"
 import { AccessToken } from "../../common/AccessToken"
 import { asError } from "../../comTypes/util"
 import { Button } from "../../vue3gui/Button"
 import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
+import { TextField } from "../../vue3gui/TextField"
 import { stringifyError } from "../../vue3gui/util"
 import { FolderSelectPopup } from "../file/FolderSelectPopup"
 import { STATE } from "../State"
@@ -52,6 +53,34 @@ export const MachineAccessScreen = (defineComponent({
             }
         }
 
+        async function openAuthURLPopup(event: MouseEvent) {
+            const value = ref(STATE.device.config.authURL ?? "")
+            const target = event.target as HTMLElement
+            const popup = emitter.popup(target, () => (
+                <form onSubmit={event => { event.preventDefault(); popup.controller.close(true) }}>
+                    <TextField vModel={value.value} focus class="monospace" style={{ width: Math.max(target.clientWidth, 200) + "px" }} />
+                    <Button clear onClick={() => { value.value = ""; popup.controller.close(true) }}> <Icon icon={mdiClose} /> Disable </Button>
+                </form>
+            ), {
+                align: {
+                    offsetX: -4,
+                    offsetY: -6
+                },
+                props: {
+                    cancelButton: false,
+                    backdropCancels: true,
+                    class: "rounded p-2 shadow",
+                    noTransition: true
+                },
+            })
+
+            if (!await popup) return null
+
+            STATE.device.setAuthURL({ url: value.value ? value.value : null }).catch(err => {
+                emitter.alert(stringifyError(err), { error: true })
+            })
+        }
+
         return () => (
             <div class="flex-fill flex row gap-2 p-2">
                 <div class="border rounded flex-fill overflow-hidden">
@@ -88,6 +117,8 @@ export const MachineAccessScreen = (defineComponent({
 
                     <h3 class="m-0">Deploy path</h3>
                     <Button onClick={openDeployPathPopup} clear class="text-left">{STATE.device.config.deployPath ?? <code>{"<"}unset{">"}</code>}</Button>
+                    <h3 class="m-0">Auth URL</h3>
+                    <Button onClick={openAuthURLPopup} clear class="text-left">{STATE.device.config.authURL ?? <code>{"<"}unset{">"}</code>}</Button>
                 </div>
             </div>
         )

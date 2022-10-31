@@ -101,6 +101,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             this.updateServiceInfo(service)
         })
         service.terminalManager = this.terminalManager
+        service.device = this.device
 
         if (service.config.scheduler != "disabled") {
             service.start()

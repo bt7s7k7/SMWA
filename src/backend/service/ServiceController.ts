@@ -1,4 +1,5 @@
-import AdmZip = require("adm-zip")
+import { randomBytes } from "crypto"
+import { URL } from "url"
 import { ADMIN_GUI_SOCKET_VARIABLE } from "../../adminUICommon/const"
 import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
 import { unreachable } from "../../comTypes/util"
@@ -6,6 +7,7 @@ import { DISPOSE } from "../../eventLib/Disposable"
 import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
+import { DeviceController } from "../DeviceController"
 import { ADMIN_UI_BRIDGE } from "../network"
 import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
@@ -13,6 +15,8 @@ import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceReposit
 export class ServiceController extends ServiceContract.defineController() {
     public readonly onInfoChanged = new EventEmitter()
     public terminalManager: TerminalManager = null!
+    public device: DeviceController = null!
+    public authKey: Buffer | null = null
 
     public [DISPOSE]() {
         super[DISPOSE]()
@@ -75,6 +79,22 @@ export class ServiceController extends ServiceContract.defineController() {
             }
 
             DATABASE.setDirty()
+        },
+        setAuthEnabled: async ({ enabled }) => {
+            if (enabled == false) {
+                this.mutate(v => v.config.authEnabled = false)
+            } else {
+                if (this.definition?.authSupport == false) throw new ClientError("This service does not support auth")
+                if (this.device.config.authURL == null) throw new ClientError("Auth URL is not set")
+                this.mutate(v => v.config.authEnabled = true)
+
+                if (this.state == "running") {
+                    const terminal = this.terminalManager.terminals.get(this.terminal!)!
+                    terminal.writeMessage("Restart required to enable auth")
+                }
+            }
+
+            DATABASE.setDirty()
         }
     })
 
@@ -130,6 +150,23 @@ export class ServiceController extends ServiceContract.defineController() {
         env[ADMIN_GUI_SOCKET_VARIABLE] = ADMIN_UI_BRIDGE.path
         env["ADMIN_UI_NAME"] = this.adminUIName
 
+        let authFailed = false
+        if (this.config.authEnabled) {
+            if (this.authKey == null) {
+                this.authKey = randomBytes(64)
+            }
+
+            if (this.device.config.authURL == null) {
+                authFailed = true
+            } else {
+                const url = new URL("/auth", this.device.config.authURL!)
+                url.searchParams.set("service", this.id)
+
+                env["SMWA_KEY"] = this.authKey.toString("base64")
+                env["SMWA_URL"] = url.href
+            }
+        }
+
         const terminal = this.terminalManager.openTerminal({
             env, command,
             cwd: this.config.path
@@ -149,6 +186,10 @@ export class ServiceController extends ServiceContract.defineController() {
             // TODO: Reset the service if using autostart
             this.setState("stopped")
         })
+
+        if (authFailed) {
+            terminal.writeMessage("Failed to enable auth, device auth url is not configured", true)
+        }
     }
 
     public setState(state: this["state"]) {

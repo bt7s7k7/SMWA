@@ -1,12 +1,18 @@
 import * as dns from "dns"
 import * as http from "http"
+import { sign } from "jsonwebtoken"
 import * as NodeOSUtils from "node-os-utils"
 import { arch, networkInterfaces, release, uptime } from "os"
+import { URL } from "url"
 import { DeviceConfig, DeviceContract } from "../common/Device"
 import { autoFilter } from "../comTypes/util"
+import { ClientError } from "../structSync/StructSyncServer"
 import { DATABASE } from "./DATABASE"
+import { ServiceManager } from "./service/ServiceManager"
 
 export class DeviceController extends DeviceContract.defineController() {
+    public services: ServiceManager = null!
+
     public impl = super.impl({
         setLabel: async ({ label }) => {
             this.mutate(v => v.config.label = label)
@@ -15,6 +21,31 @@ export class DeviceController extends DeviceContract.defineController() {
         setDeployPath: async ({ path }) => {
             this.mutate(v => v.config.deployPath = path)
             DATABASE.setDirty()
+        },
+        setAuthURL: async ({ url }) => {
+            if (url != null) {
+                try {
+                    new URL("", url!)
+                } catch (err) {
+                    throw new ClientError("Invalid URL")
+                }
+            }
+
+            this.mutate(v => v.config.authURL = url)
+            DATABASE.setDirty()
+        },
+        authenticate: async ({ service }) => {
+            const serviceHandle = this.services.services.get(service)
+            if (serviceHandle == null) throw new ClientError("Service does not exist")
+            if (serviceHandle.authKey == null) throw new ClientError("Service does not have auth enabled")
+
+            const key = await new Promise<string>((resolve, reject) => sign({
+                iss: "smwa"
+            }, serviceHandle.authKey!, {
+                expiresIn: "10s"
+            }, (err, key) => err ? reject(err) : resolve(key!)))
+
+            return key
         }
     })
 

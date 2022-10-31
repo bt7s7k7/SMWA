@@ -64,6 +64,7 @@ const accessTokenList = AccessTokenListController.make()
 context.provide(TerminalManager, "default")
 const deviceController = context.instantiate(() => DeviceController.make(DATABASE.get("device")))
 const serviceManager = context.instantiate(() => new ServiceManager(deviceController))
+deviceController.services = serviceManager
 serviceManager.init()
 
 const { auth } = (() => {
