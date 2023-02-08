@@ -27,10 +27,11 @@ export namespace ServiceRepository {
         return await Promise.all(queue)
     }
 
-    export async function loadServiceDefinition(path: string, target: ServiceConfig | null): Promise<ServiceLoadResult | ServiceDefinition> {
+    export async function loadServiceDefinition(path: string, target: ServiceConfig | null, debug?: (path: string, definition: any) => void): Promise<ServiceLoadResult | ServiceDefinition> {
         const definitionPath = join(path, SERVICE_DEF_FILE)
         const result = await readFile(definitionPath).catch(asError)
         if (result instanceof Error) {
+            debug?.(definitionPath, null)
             if (result.code == "ENOENT") {
                 return { target, type: "not_found", path: definitionPath }
             } else {
@@ -42,11 +43,13 @@ export namespace ServiceRepository {
         try {
             definition = ServiceDefinition.deserialize(JSON.parse(result.toString()))
         } catch (err: any) {
+            debug?.(definitionPath, result.toString())
             return { target, type: "error", error: err.message }
         }
 
         if (definition.scripts?.start != null) {
             if (definition.servePath != null) {
+                debug?.(definitionPath, definition.serialize())
                 return { target, type: "error", error: "Service cannot have both a start script and a serve path" }
             }
         } else {
@@ -54,10 +57,12 @@ export namespace ServiceRepository {
                 if (definition.scripts == null) definition.scripts = {}
                 definition.scripts.start = process.argv.slice(0, 2).join(" ") + " serve"
             } else {
+                debug?.(definitionPath, definition.serialize())
                 return { target, type: "error", error: "Service does not have a start script or a serve path" }
             }
         }
 
+        debug?.(definitionPath, definition.serialize())
         return definition
     }
 

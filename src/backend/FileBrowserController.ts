@@ -18,6 +18,14 @@ async function findDriveLetters() {
     }
 }
 
+export function convertPathFromFileBrowserToSystem(path: string) {
+    if (path.match(/^\/[A-Z]:\//)) {
+        return path.substring(1).replace(/\//g, "\\")
+    } else {
+        return path
+    }
+}
+
 export class FileBrowserController extends FileBrowserContract.defineController() {
     public impl = super.impl({
         listDirectory: async ({ path }) => {

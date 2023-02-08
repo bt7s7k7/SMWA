@@ -8,6 +8,7 @@ import { LogMarker } from "../../logger/ObjectDescription"
 import { ClientError, StructSyncServer } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
 import { DeviceController } from "../DeviceController"
+import { convertPathFromFileBrowserToSystem } from "../FileBrowserController"
 import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceController } from "./ServiceController"
 import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
@@ -21,7 +22,9 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
 
     public impl = super.impl({
         tryPath: async ({ path }) => {
-            const result = await ServiceRepository.loadServiceDefinition(path, null)
+            path = convertPathFromFileBrowserToSystem(path)
+
+            const result = await ServiceRepository.loadServiceDefinition(path, null/* , (path, definition) => this.logger.warn`Service definition not loaded: ${{ path, definition }}` */)
             if (result instanceof ServiceDefinition) return result
 
             if (result.type == "not_found") {
@@ -31,6 +34,8 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             } else unreachable()
         },
         createService: async ({ path, label }) => {
+            path = convertPathFromFileBrowserToSystem(path)
+
             const config = ServiceConfig.make({ label, path })
 
             const result = await ServiceRepository.loadService(config)
