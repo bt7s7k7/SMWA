@@ -74,7 +74,7 @@ export const ServiceView = (defineComponent({
         const formattedUptime = computed(() => {
             if (props.service.uptime == null) return "None"
             const uptime = props.service.state == "running" || props.service.state == "updating" ? STATE.time - props.service.uptime : props.service.uptime
-            return formatTime(uptime)
+            return formatTime(Math.max(0, uptime * 1000))
         })
 
         const schedulerConfig = useTabs({

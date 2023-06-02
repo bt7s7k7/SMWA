@@ -1,9 +1,9 @@
 import { io } from "socket.io-client"
 import { markRaw, reactive } from "vue"
 import { unreachable } from "../comTypes/util"
+import { DIContext } from "../dependencyInjection/DIContext"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
 import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
-import { DIContext } from "../dependencyInjection/DIContext"
 import { EventListener } from "../eventLib/EventListener"
 import { StructSyncClient } from "../structSync/StructSyncClient"
 import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
@@ -98,12 +98,12 @@ class State extends EventListener {
         const accessTokens = context.instantiate(() => AccessTokenListProxy.default())
 
         const modem = context.instantiate(() => new VirtualModemClient())
-        const  virtualPeer =  VirtualPeer.make(modem.connect())
+        const virtualPeer = VirtualPeer.make(modem.connect())
 
         Object.assign(this, { device, connectionContext: context, terminalSpawner, fileBrowser, services, adminAuth, accessTokens, virtualPeer })
 
         this.fileBrowser.synchronize()
-        this.device.synchronize()
+        this.device.synchronize().then(() => this.time = device.time)
         this.services.synchronize()
         this.accessTokens.synchronize()
     }
@@ -127,7 +127,6 @@ window.addEventListener("beforeunload", () => {
     STATE.connectionContext?.dispose()
 })
 
-STATE.time = Date.now()
 setInterval(() => {
-    STATE.time = Date.now()
-}, 500)
+    STATE.time++
+}, 1000)

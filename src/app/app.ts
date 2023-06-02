@@ -14,13 +14,13 @@ import { ServiceRepository, stringifyServiceLoadFailure } from "../backend/servi
 import { PersonalTerminalSpawnerController } from "../backend/terminal/PersonalTerminalSpawnerController"
 import { TerminalHandleController } from "../backend/terminal/TerminalHandleController"
 import { TerminalManager } from "../backend/terminal/TerminalManager"
-import { DeviceConfig } from "../common/Device"
-import { User } from "../common/User"
 import { Readwrite } from "../comTypes/types"
 import { stringifyAddress, wrapFunction } from "../comTypes/util"
+import { DeviceConfig } from "../common/Device"
+import { User } from "../common/User"
+import { DIContext } from "../dependencyInjection/DIContext"
 import { IDProvider } from "../dependencyInjection/commonServices/IDProvider"
 import { MessageBridge } from "../dependencyInjection/commonServices/MessageBridge"
-import { DIContext } from "../dependencyInjection/DIContext"
 import { Logger } from "../logger/Logger"
 import { NodeLogger } from "../nodeLogger/NodeLogger"
 import { PermissionRepository } from "../simpleAuth/PermissionRepository"
@@ -62,7 +62,7 @@ const ioSessions = new WeakSet<StructSyncSession>()
 const accessTokenList = AccessTokenListController.make()
 
 context.provide(TerminalManager, "default")
-const deviceController = context.instantiate(() => DeviceController.make(DATABASE.get("device")))
+const deviceController = context.provide(DeviceController, () => DeviceController.make(DATABASE.get("device")))
 const serviceManager = context.instantiate(() => new ServiceManager(deviceController))
 deviceController.services = serviceManager
 serviceManager.init()

@@ -1,8 +1,9 @@
 import { randomBytes } from "crypto"
 import { URL } from "url"
 import { ADMIN_GUI_SOCKET_VARIABLE } from "../../adminUICommon/const"
-import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
 import { unreachable } from "../../comTypes/util"
+import { ServiceConfig, ServiceContract, ServiceDefinition, ServiceInfo } from "../../common/Service"
+import { DIContext } from "../../dependencyInjection/DIContext"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { EventEmitter } from "../../eventLib/EventEmitter"
 import { ClientError } from "../../structSync/StructSyncServer"
@@ -17,6 +18,8 @@ export class ServiceController extends ServiceContract.defineController() {
     public terminalManager: TerminalManager = null!
     public device: DeviceController = null!
     public authKey: Buffer | null = null
+
+    protected readonly _device = DIContext.current.inject(DeviceController)
 
     public [DISPOSE]() {
         super[DISPOSE]()
@@ -195,9 +198,9 @@ export class ServiceController extends ServiceContract.defineController() {
     public setState(state: this["state"]) {
         this.mutate(v => { v.state = state })
         if (state == "running" || state == "updating") {
-            this.mutate(v => { v.uptime = Date.now() })
+            this.mutate(v => { v.uptime = this._device.time })
         } else if (this.uptime != null) {
-            this.mutate(v => { v.uptime = Date.now() - this.uptime! })
+            this.mutate(v => { v.uptime = this._device.time - this.uptime! })
         }
 
         this.onInfoChanged.emit()

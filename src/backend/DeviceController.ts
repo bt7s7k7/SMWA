@@ -4,8 +4,8 @@ import { sign } from "jsonwebtoken"
 import * as NodeOSUtils from "node-os-utils"
 import { arch, networkInterfaces, release, uptime } from "os"
 import { URL } from "url"
-import { DeviceConfig, DeviceContract } from "../common/Device"
 import { autoFilter } from "../comTypes/util"
+import { DeviceConfig, DeviceContract } from "../common/Device"
 import { ClientError } from "../structSync/StructSyncServer"
 import { DATABASE } from "./DATABASE"
 import { ServiceManager } from "./service/ServiceManager"
@@ -57,8 +57,9 @@ export class DeviceController extends DeviceContract.defineController() {
         const interfaces = autoFilter(Object.entries(networkInterfaces()).map(v => v[1]?.map(v => v.address))).filter(v => v != "127.0.0.1" && v != "::1")
         const start = Date.now() - uptime() * 1000
         const device = new DeviceController({
-            config, interfaces, start,
-            cpuUsage: 0, memUsage: 0, os: "", errors: []
+            config, interfaces,
+            cpuUsage: 0, memUsage: 0, os: "", errors: [],
+            start, time: 0, uptime: uptime()
         })
         // @ts-ignore
         NodeOSUtils.os.oos().then(osName => device.mutate(v => v.os = `${osName} (${arch()}, ${release()})`))
@@ -89,6 +90,10 @@ export class DeviceController extends DeviceContract.defineController() {
 
             res.on("error", () => { })
         }).on("error", () => { })
+
+        setInterval(() => {
+            device.time++
+        }, 1000)
 
         return device
     }

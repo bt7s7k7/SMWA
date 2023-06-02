@@ -2,8 +2,8 @@ import * as pty from "node-pty"
 import { platform } from "os"
 import { SerializeAddon } from "xterm-addon-serialize"
 import { Terminal } from "xterm-headless"
-import { TerminalHandleContract } from "../../common/Terminal"
 import { makeRandomID } from "../../comTypes/util"
+import { TerminalHandleContract } from "../../common/Terminal"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { ConsoleColorUtils } from "../../nodeLogger/ConsoleColorUtils"
 import process = require("process")
@@ -61,7 +61,7 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
     }
 
     public writeMessage(message: string, topMargin?: boolean) {
-        const timestamp = new Date().toISOString().substring(0, 19).replace(`T`, " ")
+        const timestamp = new Date().toLocaleString("sv")
         message = ConsoleColorUtils.addStyle(`[${timestamp}] ${message}`, "gray") + ConsoleColorUtils.addStyle(" ", "white") + "\r\n"
         if (topMargin) message = "\r\n\r\n" + message
         this.write(message)

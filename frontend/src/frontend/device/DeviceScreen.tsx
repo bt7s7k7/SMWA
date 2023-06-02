@@ -6,8 +6,8 @@ import { useDynamicsEmitter } from "../../vue3gui/DynamicsEmitter"
 import { Icon } from "../../vue3gui/Icon"
 import { StateCard } from "../../vue3gui/StateCard"
 import { TextField } from "../../vue3gui/TextField"
-import { UsersView } from "../auth/UsersView"
 import { STATE } from "../State"
+import { UsersView } from "../auth/UsersView"
 import { useTitle } from "../useTitle"
 import { formatDate, formatTime } from "../util"
 
@@ -74,7 +74,7 @@ export const DeviceScreen = (defineComponent({
                             <div class="flex column gap-2">
                                 <div class="flex column">
                                     <small class="muted">Uptime</small>
-                                    <div>{formatTime(STATE.time - STATE.device.start)}</div>
+                                    <div>{formatTime((STATE.device.uptime + STATE.time) * 1000)}</div>
                                 </div>
                                 <div class="flex column">
                                     <small class="muted">Boot</small>

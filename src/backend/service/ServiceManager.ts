@@ -1,6 +1,6 @@
 import { join } from "path"
-import { ServiceConfig, ServiceDefinition, ServiceManagerContract } from "../../common/Service"
 import { makeRandomID, unreachable } from "../../comTypes/util"
+import { ServiceConfig, ServiceDefinition, ServiceManagerContract } from "../../common/Service"
 import { DIContext } from "../../dependencyInjection/DIContext"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { Logger } from "../../logger/Logger"
@@ -38,7 +38,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
 
             const config = ServiceConfig.make({ label, path })
 
-            const result = await ServiceRepository.loadService(config)
+            const result = await ServiceRepository.loadService(config, this.context)
 
             if (result.type == "not_found") {
                 throw new ClientError("Folder does not contain a definition file")
@@ -66,7 +66,7 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
             const path = join(deployPath, filename)
             const config = ServiceConfig.make({ id, label, path })
 
-            const service = ServiceController.make(config, null, "This service was not deployed yet")
+            const service = this.context.instantiate(() => ServiceController.make(config, null, "This service was not deployed yet"))
             DATABASE.put("service", service.config)
             this.addService(service)
             this.logger.info`Created new deploy service ${config.label}`
@@ -77,14 +77,14 @@ export class ServiceManager extends ServiceManagerContract.defineController() {
 
     public async init() {
         this.logger.info`Loading services...`
-        for (const result of await ServiceRepository.loadAllServices()) {
+        for (const result of await ServiceRepository.loadAllServices(this.context)) {
             if (result.type == "success") {
                 this.addService(result.service)
             } else {
                 const error = this.device.config.deployPath && result.type == "not_found" && result.path.startsWith(this.device.config.deployPath) ? "Service was not deployed yet"
                     : stringifyServiceLoadFailure(result)
                 this.logger.error`${LogMarker.rawText(error)}`
-                this.addService(ServiceController.make(result.target!, null, error))
+                this.addService(this.context.instantiate(() => ServiceController.make(result.target!, null, error)))
             }
         }
         this.logger.info`Services loaded`

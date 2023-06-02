@@ -1,8 +1,9 @@
 import AdmZip = require("adm-zip")
 import { mkdir, readFile, rm } from "fs/promises"
 import { join } from "path"
-import { ServiceConfig, ServiceDefinition } from "../../common/Service"
 import { asError, unreachable } from "../../comTypes/util"
+import { ServiceConfig, ServiceDefinition } from "../../common/Service"
+import { DIContext } from "../../dependencyInjection/DIContext"
 import { DATABASE } from "../DATABASE"
 import { ServiceController } from "./ServiceController"
 
@@ -18,10 +19,10 @@ export function stringifyServiceLoadFailure(result: ServiceLoadResult, config: S
 }
 
 export namespace ServiceRepository {
-    export async function loadAllServices() {
+    export async function loadAllServices(context: DIContext) {
         const queue: Promise<ServiceLoadResult>[] = []
         for (const config of DATABASE.list("service")) {
-            queue.push(loadService(config))
+            queue.push(loadService(config, context))
         }
 
         return await Promise.all(queue)
@@ -66,12 +67,12 @@ export namespace ServiceRepository {
         return definition
     }
 
-    export async function loadService(config: ServiceConfig): Promise<ServiceLoadResult> {
+    export async function loadService(config: ServiceConfig, context: DIContext): Promise<ServiceLoadResult> {
         const path = config.path
         const result = await loadServiceDefinition(path, config)
         if (!(result instanceof ServiceDefinition)) return result
 
-        const service = ServiceController.make(config, result, null)
+        const service = context.instantiate(() => ServiceController.make(config, result, null))
 
         return { target: config, type: "success", service }
     }
