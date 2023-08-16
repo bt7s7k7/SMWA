@@ -1,5 +1,5 @@
 import { mdiCogs, mdiPlay, mdiStop, mdiTrashCan, mdiUpdate } from "@mdi/js"
-import { computed, defineComponent, ref, watch } from "vue"
+import { computed, defineComponent, ref, toRaw, watch } from "vue"
 import { useRouter } from "vue-router"
 import { asError, unreachable } from "../../comTypes/util"
 import { Button } from "../../vue3gui/Button"
@@ -84,6 +84,10 @@ export const ServiceView = (defineComponent({
 
         watch(() => props.service, (service) => {
             schedulerConfig.selected = service.config.scheduler
+            // eslint-disable-next-line no-console
+            console.log("[ServiceView.tsx] Selected service", service.id)
+            // eslint-disable-next-line no-console
+            console.log(toRaw(service))
         }, { immediate: true })
 
         watch(() => schedulerConfig.selected, (scheduler) => {

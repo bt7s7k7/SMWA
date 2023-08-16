@@ -1,7 +1,8 @@
 import { mdiChevronLeft, mdiFileOutline, mdiFolderOutline, mdiFolderPlusOutline, mdiRefresh, mdiTrashCan } from "@mdi/js"
 import { ComponentPublicInstance, computed, defineComponent, ref, watch } from "vue"
-import { DirentInfo } from "../../common/FileBrowser"
 import { asError } from "../../comTypes/util"
+import { DirentInfo } from "../../common/FileBrowser"
+import { toInternalPath } from "../../common/common"
 import { eventDecorator } from "../../eventDecorator"
 import { Path } from "../../path/Path"
 import { Button } from "../../vue3gui/Button"
@@ -27,7 +28,7 @@ export const FileBrowserView = eventDecorator(defineComponent({
     setup(props, ctx) {
         const emitter = useDynamicsEmitter()
 
-        const path = ref(props.initialPath ?? STATE.fileBrowser.homedir)
+        const path = ref(toInternalPath(props.initialPath ?? STATE.fileBrowser.homedir))
         const files = asyncComputed(() => path.value, path => STATE.fileBrowser.listDirectory({ path }).then(files => {
             files.sort((a, b) => (
                 // Sort entries prefixed with a dot after others

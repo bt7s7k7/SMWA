@@ -2,8 +2,9 @@ import * as dns from "dns"
 import * as http from "http"
 import { sign } from "jsonwebtoken"
 import * as NodeOSUtils from "node-os-utils"
-import { arch, networkInterfaces, release, uptime } from "os"
+import { arch, networkInterfaces, platform, release, uptime } from "os"
 import { URL } from "url"
+import { Optional } from "../comTypes/Optional"
 import { autoFilter } from "../comTypes/util"
 import { DeviceConfig, DeviceContract } from "../common/Device"
 import { ClientError } from "../structSync/StructSyncServer"
@@ -62,7 +63,7 @@ export class DeviceController extends DeviceContract.defineController() {
             start, time: 0, uptime: uptime()
         })
         // @ts-ignore
-        NodeOSUtils.os.oos().then(osName => device.mutate(v => v.os = `${osName} (${arch()}, ${release()})`))
+        NodeOSUtils.os.oos().then(osName => device.mutate(v => v.os = `${Optional.value(osName).rejectValue("not supported").else(() => platform()).unwrap()} (${arch()}, ${release()})`))
         async function refreshUsageData() {
             const cpuUsage = (await NodeOSUtils.cpu.usage()) / 100
             const { totalMemMb, usedMemMb } = await NodeOSUtils.mem.used()

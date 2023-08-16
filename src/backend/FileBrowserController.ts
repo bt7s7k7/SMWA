@@ -1,9 +1,10 @@
 import { mkdir, readdir, rm } from "fs/promises"
 import { homedir } from "os"
 import { join } from "path"
-import { DirentInfo, FileBrowserContract } from "../common/FileBrowser"
 import { asError } from "../comTypes/util"
+import { DirentInfo, FileBrowserContract } from "../common/FileBrowser"
 import { ClientError } from "../structSync/StructSyncServer"
+import { toInternalPath } from "../common/common"
 
 let driveLetters: DirentInfo[] | null = null
 async function findDriveLetters() {
@@ -15,14 +16,6 @@ async function findDriveLetters() {
         }, err => {
             if (err.code != "ENOENT") throw err
         })
-    }
-}
-
-export function convertPathFromFileBrowserToSystem(path: string) {
-    if (path.match(/^\/[A-Z]:\//)) {
-        return path.substring(1).replace(/\//g, "\\")
-    } else {
-        return path
     }
 }
 
@@ -66,12 +59,12 @@ export class FileBrowserController extends FileBrowserContract.defineController(
     })
 
     public static make() {
-        let home = homedir()
-        if (home.match(/^[A-Z]:\\/)) {
-            home = "/" + home.replace(/\\/g, "/")
+        const home = homedir()
+        const internalHome = toInternalPath(home)
+        if (home != internalHome) {
             findDriveLetters()
         }
 
-        return new FileBrowserController({ homedir: home })
+        return new FileBrowserController({ homedir: internalHome })
     }
 }
