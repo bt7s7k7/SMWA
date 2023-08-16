@@ -7,17 +7,22 @@ $padding: 5px;
 
 
 .as-terminal {
+    width: 100%;
+
     .terminal-container {
         width: 1135px + ($padding * 2);
         height: 840px + ($padding * 2);
-        
-        overflow: auto;
-        
+
+        max-width: 100%;
+
         .terminal-parent {
             width: 1135px + ($padding * 2);
             height: 840px + ($padding * 2);
 
-            > div {
+            max-width: 100%;
+            max-height: 100%;
+
+            >div {
                 padding: $padding;
             }
         }
@@ -27,11 +32,11 @@ $padding: 5px;
         .terminal-container {
             @media screen and (max-width: 1187px) {
                 width: calc(100vw - 100px);
-        }
-        
-        @media screen and (max-height: 925px) {
+            }
+
+            @media screen and (max-height: 925px) {
                 height: calc(100vh - 100px);
-        }
+            }
         }
     }
 }

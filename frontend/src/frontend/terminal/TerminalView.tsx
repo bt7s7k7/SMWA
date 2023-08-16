@@ -1,11 +1,12 @@
-import { defineComponent, markRaw, onMounted, onUnmounted, ref, watch } from "vue"
+import { computed, defineComponent, markRaw, onMounted, onUnmounted, ref, watch } from "vue"
 import { Terminal } from "xterm"
+import { FitAddon } from "xterm-addon-fit"
 import "xterm/css/xterm.css"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { LoadingIndicator } from "../../vue3gui/LoadingIndicator"
 import { Overlay } from "../../vue3gui/Overlay"
 import { StateCard } from "../../vue3gui/StateCard"
-import { asyncComputed, stringifyError } from "../../vue3gui/util"
+import { asyncComputed, stringifyError, useDebounce, useResizeWatcher } from "../../vue3gui/util"
 import { STATE } from "../State"
 import { TerminalHandleProxy } from "./TerminalHandleProxy"
 
@@ -27,6 +28,9 @@ export const TerminalView = (defineComponent({
             fontSize: 12,
             convertEol: true
         })
+
+        const fit = new FitAddon()
+        terminal.loadAddon(fit)
 
         const terminalElement = ref<HTMLElement>()
 
@@ -52,6 +56,22 @@ export const TerminalView = (defineComponent({
 
         onMounted(() => {
             terminal.open(terminalElement.value!)
+            if (props.fill) {
+                setTimeout(() => {
+                    fit.fit()
+                }, 10)
+            } else {
+                setTimeout(() => {
+                    fit.fit()
+                }, 110)
+            }
+        })
+
+        const size = useResizeWatcher()
+        const widthDebounced = useDebounce(computed(() => size.width + " " + size.height), { delay: 50, intermediateUpdates: true, immediate: true })
+
+        watch(widthDebounced, () => {
+            fit.fit()
         })
 
         return () => (
