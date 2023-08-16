@@ -44,6 +44,7 @@ logger.write = wrapFunction(logger.write, (base) => (...args) => {
 })
 
 logger.info`Config: ${ENV}`
+logger.info`PID: ${process.pid}`
 
 logger.info`Starting...`
 
