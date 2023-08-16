@@ -10,7 +10,7 @@ export const EventLogScreen = (defineComponent({
         return () => (
             <div class="flex-fill flex column p-2 gap-2">
                 <div class="border rounded p-2 gap-2 flex row" key="terminal">
-                    <TerminalView id={"__event_log"} />
+                    <TerminalView fill id={"__event_log"} />
                 </div>
             </div>
         )

@@ -7,13 +7,16 @@ import { useDynamicsEmitter } from "../vue3gui/DynamicsEmitter"
 import { Icon } from "../vue3gui/Icon"
 import { stringifyError } from "../vue3gui/util"
 import { Variant } from "../vue3gui/variants"
-import { ServiceCreatorPopup } from "./service/ServiceCreatorPopup"
 import { STATE } from "./State"
+import { ServiceCreatorPopup } from "./service/ServiceCreatorPopup"
 
 type Item = { to?: string, onClick?: () => void, label: string, icon: string, variant?: Variant } | "separator"
 
 export const Sidebar = (defineComponent({
     name: "Sidebar",
+    props: {
+        fullPageMode: { type: Boolean }
+    },
     setup(props, ctx) {
         const emitter = useDynamicsEmitter()
         const router = useRouter()
@@ -51,15 +54,26 @@ export const Sidebar = (defineComponent({
             }
         }
 
-        return () => (
-            <div>
-                <div class="absolute-fill flex column scroll py-2">
-                    {items.value.map(v => (
-                        v == "separator" ? <div class="m-2 border-bottom"></div>
-                            : <Button class={`text-left text-${v.variant ?? "black"}`} onClick={v.onClick} clear to={v.to}> <Icon icon={v.icon} /> {v.label} </Button>
-                    ))}
-                </div>
-            </div>
-        )
+        return () => {
+            const itemsVNodes = items.value.map(v => (
+                v == "separator" ? <div class="m-2 border-bottom"></div>
+                    : <Button replace={props.fullPageMode} class={`text-left text-${v.variant ?? "black"}`} onClick={v.onClick} clear to={v.to}> <Icon icon={v.icon} /> {v.label} </Button>
+            ))
+
+            if (!props.fullPageMode) {
+                return (
+                    <div>
+                        <div class="absolute-fill flex column scroll py-2">
+                            {itemsVNodes}
+                        </div>
+                    </div>
+                )
+            } else {
+                return (
+                    <div class="py-2 flex column w-fill">{itemsVNodes}</div>
+                )
+            }
+
+        }
     }
 }))

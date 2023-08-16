@@ -213,7 +213,7 @@ export const ServiceView = (defineComponent({
                     </div>}
                     <ServiceAdminUI service={props.service} />
                     {props.service.terminal && <div class="border rounded p-2 gap-2 flex row" key="terminal">
-                        <TerminalView id={props.service.terminal} />
+                        <TerminalView fill id={props.service.terminal} />
                     </div>}
                 </div>
             </div>
