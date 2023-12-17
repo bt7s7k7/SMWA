@@ -1,17 +1,17 @@
 import { join } from "path"
 import { makeRandomID, unreachable } from "../../comTypes/util"
 import { ServiceConfig, ServiceDefinition, ServiceManagerContract } from "../../common/Service"
+import { fromInternalPath } from "../../common/common"
 import { DIContext } from "../../dependencyInjection/DIContext"
 import { DISPOSE } from "../../eventLib/Disposable"
 import { Logger } from "../../logger/Logger"
-import { LogMarker } from "../../logger/ObjectDescription"
+import { LogMarker } from "../../prettyPrint/ObjectDescription"
 import { ClientError, StructSyncServer } from "../../structSync/StructSyncServer"
 import { DATABASE } from "../DATABASE"
 import { DeviceController } from "../DeviceController"
 import { TerminalManager } from "../terminal/TerminalManager"
 import { ServiceController } from "./ServiceController"
 import { ServiceRepository, stringifyServiceLoadFailure } from "./ServiceRepository"
-import { fromInternalPath } from "../../common/common"
 
 export class ServiceManager extends ServiceManagerContract.defineController() {
     public readonly context = DIContext.current

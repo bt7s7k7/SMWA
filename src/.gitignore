@@ -10,6 +10,7 @@ comTypes
 structSyncExpress
 nodeLogger
 logger
+prettyPrint
 adminUIBridge
 adminUICommon
 virtualNetworkModem
