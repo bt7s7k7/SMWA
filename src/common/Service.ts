@@ -4,8 +4,8 @@ import { Type } from "../struct/Type"
 import { ActionType } from "../structSync/ActionType"
 import { StructSyncContract } from "../structSync/StructSyncContract"
 
-export const ServiceState_t = Type.stringUnion("running", "updating", "stopped", "error")
-export const ServiceScheduler_t = Type.stringUnion("disabled", "autostart")
+export const ServiceState_t = Type.enum("running", "updating", "stopped", "error")
+export const ServiceScheduler_t = Type.enum("disabled", "autostart")
 
 export class ServiceInfo extends Struct.define("ServiceInfo", {
     label: Type.string,
@@ -18,33 +18,39 @@ export class ServiceConfig extends Struct.define("ServiceConfig", {
     label: Type.string,
     path: Type.string,
     scheduler: ServiceScheduler_t,
-    env: Type.string.as(Type.record),
+    env: Type.string.as(Type.map),
     authEnabled: Type.boolean
 }) {
     public static make({ id = makeRandomID(), label, path }: { id?: string, label: string, path: string }) {
         return new ServiceConfig({
             id, label, path,
             scheduler: "disabled",
-            env: {},
+            env: new Map(),
             authEnabled: false
         })
     }
 }
-Type.defineMigrations(ServiceConfig.baseType, [
+ServiceConfig.baseType.defineMigrations([
     {
         version: 4,
         desc: "Added auth enabled",
-        migrate: v => Object.assign(v, { authEnabled: false })
+        migrate(handle, deserializer, overrides) {
+            overrides.set("authEnabled", true)
+        },
     },
     {
         version: 3,
         desc: "Added env",
-        migrate: v => Object.assign(v, { env: {} })
+        migrate(handle, deserializer, overrides) {
+            overrides.set("env", new Map())
+        },
     },
     {
         version: 2,
         desc: "Added scheduler",
-        migrate: v => Object.assign(v, { scheduler: "disabled" })
+        migrate(handle, deserializer, overrides) {
+            overrides.set("scheduler", "disabled")
+        },
     }
 ])
 
@@ -58,7 +64,6 @@ export class ServiceDefinition extends Struct.define("ServiceDefinition", {
     include: Type.string.as(Type.array).as(Type.nullable),
     authSupport: Type.boolean.as(Type.nullable)
 }) { }
-Type.defineMigrations(ServiceDefinition.baseType, [])
 
 export const ServiceContract = StructSyncContract.define(class Service extends Struct.define("Service", {
     state: ServiceState_t,

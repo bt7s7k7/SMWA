@@ -1,10 +1,7 @@
 import { createApp } from "vue"
 import { App } from "./app/App"
 import { router } from "./app/router"
-import { LIGHT_THEME } from "./vue3gui/themes/light"
-import { ThemeSwitch } from "./vue3gui/ThemeSwitch"
-
-new ThemeSwitch().registerTheme(LIGHT_THEME)
+import "./vue3gui/style.scss"
 
 const app = createApp(App)
 

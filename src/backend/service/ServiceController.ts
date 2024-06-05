@@ -70,13 +70,16 @@ export class ServiceController extends ServiceContract.defineController() {
         setEnvVariable: async ({ key, replace, value }) => {
             if (value == null && replace == null) {
                 if (!(key in this.config.env)) throw new ClientError("Variable not found")
-                this.mutate(v => delete v.config.env[key])
+                this.mutate(v => v.config.env.delete(key))
             } else if (value != null && replace == null) {
-                this.mutate(v => v.config.env[key] = value)
+                this.mutate(v => v.config.env.set(key, value))
             } else if (value == null && replace != null) {
                 if (!(replace in this.config.env)) throw new ClientError("Variable not found")
                 if (key in this.config.env) throw new ClientError("Variable already exists")
-                this.mutate(v => { v.config.env[key] = this.config.env[replace]; delete v.config.env[replace] })
+                this.mutate(v => {
+                    v.config.env.set(key, this.config.env.get(replace)!)
+                    v.config.env.delete(replace)
+                })
             } else {
                 throw new ClientError("Invalid signature")
             }
@@ -145,7 +148,7 @@ export class ServiceController extends ServiceContract.defineController() {
     }
 
     protected async openTerminal(command: string, state: this["state"]) {
-        const env = { ...this.config.env }
+        const env = Object.fromEntries(this.config.env)
         if (this.definition!.servePath != null) {
             env.SERVE_PATH = this.definition!.servePath
         }

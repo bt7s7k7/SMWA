@@ -41,7 +41,7 @@ export const ServiceEnvPopup = (defineComponent({
         }
 
         async function changeValue(event: MouseEvent, key: string) {
-            const value = await makeField(event, props.service.config.env[key])
+            const value = await makeField(event, props.service.config.env.get(key))
             if (value == null) return
 
             const work = emitter.work("Changing value...")
@@ -114,7 +114,7 @@ export const ServiceEnvPopup = (defineComponent({
                 <div class="flex column border rounded h-500">
                     <div class="flex-fill">
                         <div class="absolute-fill scroll">
-                            {Object.entries(props.service.config.env).map(([key, value]) => (
+                            {[...props.service.config.env].map(([key, value]) => (
                                 <div key={key} class="flex row hover-check center-cross">
                                     <Button onClick={event => renameValue(event, key)} clear class="text-left monospace">{key}</Button>
                                     <span class="monospace user-select-none">=</span>

@@ -9,8 +9,6 @@ export class DeviceConfig extends Struct.define("DeviceConfig", {
     authURL: Type.string.as(Type.nullable)
 }) { }
 
-Type.defineMigrations(DeviceConfig.baseType, [])
-
 export const DeviceContract = StructSyncContract.define(class Device extends Struct.define("Device", {
     config: DeviceConfig.ref(),
     os: Type.string,

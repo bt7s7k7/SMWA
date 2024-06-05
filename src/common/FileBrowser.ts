@@ -5,7 +5,7 @@ import { StructSyncContract } from "../structSync/StructSyncContract"
 
 export class DirentInfo extends Struct.define("DirentInfo", {
     name: Type.string,
-    type: Type.stringUnion("file", "directory", "other")
+    type: Type.enum("file", "directory", "other")
 }) { }
 
 export const FileBrowserContract = StructSyncContract.define(class FileBrowser extends Struct.define("FileBrowser", {
