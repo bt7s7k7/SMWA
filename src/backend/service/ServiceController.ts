@@ -112,7 +112,9 @@ export class ServiceController extends ServiceContract.defineController() {
             this.terminalManager.deleteTerminal(this.terminal)
         }
 
-        await this.openTerminal(this.definition.scripts?.start, "running")
+        let startCommand = this.config.env.get("SMWA_CUSTOM_START") ?? this.definition.scripts?.start
+
+        await this.openTerminal(startCommand, "running")
     }
 
     public async stop(ignoreError?: boolean) {
