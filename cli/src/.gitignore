@@ -1,11 +1,11 @@
 
 # UCPeM generated, write above to not be overwritten
-common
-structSync
-struct
-dependencyInjection
-eventLib
-simpleAuth
-simpleDB
-comTypes
-structSyncAxios
+/common
+/structSync
+/struct
+/dependencyInjection
+/eventLib
+/simpleAuth
+/simpleDB
+/comTypes
+/structSyncAxios

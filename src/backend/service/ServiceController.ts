@@ -69,12 +69,12 @@ export class ServiceController extends ServiceContract.defineController() {
         },
         setEnvVariable: async ({ key, replace, value }) => {
             if (value == null && replace == null) {
-                if (!(key in this.config.env)) throw new ClientError("Variable not found")
+                if (!this.config.env.has(key)) throw new ClientError("Variable not found")
                 this.mutate(v => v.config.env.delete(key))
             } else if (value != null && replace == null) {
                 this.mutate(v => v.config.env.set(key, value))
             } else if (value == null && replace != null) {
-                if (!(replace in this.config.env)) throw new ClientError("Variable not found")
+                if (!this.config.env.has(replace)) throw new ClientError("Variable not found")
                 if (key in this.config.env) throw new ClientError("Variable already exists")
                 this.mutate(v => {
                     v.config.env.set(key, this.config.env.get(replace)!)
