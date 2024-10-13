@@ -2,6 +2,7 @@ import { createServer } from "http"
 import { hostname } from "os"
 import { join } from "path"
 import { Server } from "socket.io"
+import { inspect } from "util"
 import { AccessTokenListController } from "../backend/AccessTokenListController"
 import { AuthController } from "../backend/AuthController"
 import { DATABASE, SavedKeys } from "../backend/DATABASE"
@@ -40,6 +41,11 @@ const eventLogTerminal = TerminalHandleController.make({ virtual: true, command:
 logger.write = wrapFunction(logger.write, (base) => (...args) => {
     const message = args[0]
     eventLogTerminal.write(message)
+    base(...args)
+})
+
+console.error = wrapFunction(console.error, (base) => (...args) => {
+    eventLogTerminal.write("[INTERNAL] " + args.map(v => inspect(v, { colors: true, compact: true })).join(" ") + "\n")
     base(...args)
 })
 
