@@ -74,7 +74,7 @@ export class TerminalHandleController extends TerminalHandleContract.defineContr
 
     public static make(options: TerminalOptions) {
         const id = options.id ?? makeRandomID()
-        const env = process.env as Record<string, string>
+        const env = Object.assign({}, process.env) as Record<string, string>
         delete env["PORT"]
         delete env["DB_PATH"]
         delete env["BASE_DIR"]
