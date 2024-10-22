@@ -8,4 +8,4 @@ export class Config extends Struct.define("Config", {
     include: Type.string.as(Type.array).as(Type.nullable)
 }) { }
 
-Type.defineMigrations(Config.baseType, [])
+export const CONFIG_FILE = process.env.SMWA_CFG ?? "./smwa-deploy.json"

@@ -23,7 +23,7 @@
         "eslint": "^7.20.0",
         "nodemon": "^2.0.12",
         "ts-node-dev": "^1.1.1",
-        "typescript": "^4.1.3"
+        "typescript": "^5.4.3"
     },
     "scripts": {
         "dev": "WAA_CONFIG_PATH=./config.json concurrently --raw --kill-others \"yarn watch\" \"yarn watch-run\"",

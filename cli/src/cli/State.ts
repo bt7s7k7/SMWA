@@ -12,10 +12,10 @@ import { DIContext } from "../dependencyInjection/DIContext"
 import { Type } from "../struct/Type"
 import { StructSyncClient } from "../structSync/StructSyncClient"
 import { StructSyncAxios } from "../structSyncAxios/StructSyncAxios"
-import { Config } from "./Config"
+import { Config, CONFIG_FILE } from "./Config"
 import { UI } from "./UI"
 
-const COLORS_PER_STATE: Record<Type.GetTypeFromTypeWrapper<typeof ServiceState_t>, (v: string) => string> = {
+const COLORS_PER_STATE: Record<Type.Extract<typeof ServiceState_t>, (v: string) => string> = {
     error: chalk.redBright,
     running: chalk.greenBright,
     stopped: chalk.gray,
@@ -124,7 +124,7 @@ export class State {
     }
 
     public async save() {
-        await writeFile("./smwa-deploy.json", JSON.stringify(this.config.serialize(), null, 4))
+        await writeFile(CONFIG_FILE, JSON.stringify(this.config.serialize(), null, 4))
     }
 
     public setService(service: string) {
@@ -252,7 +252,7 @@ export class State {
     }
 
     public static async createFromConfig() {
-        const result = await readFile("./smwa-deploy.json").catch(asError)
+        const result = await readFile(CONFIG_FILE).catch(asError)
         if (result instanceof Error) {
             if (result.code == "ENOENT") {
                 UI.error("No deploy file found")

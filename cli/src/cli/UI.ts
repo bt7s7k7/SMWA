@@ -99,7 +99,7 @@ export namespace UI {
                     update()
                 })
             }
-            update(!!"no clear")
+            update(true)
         })
     }
 }
